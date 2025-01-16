@@ -1,0 +1,20 @@
+Time series
+
+    https://github.com/fraunhoferportugal/tsfel
+
+    https://github.com/blue-yonder/tsfresh
+
+    https://github.com/winedarksea/AutoTS
+
+    https://github.com/functime-org/functime
+
+ML:
+    https://github.com/sberbank-ai-lab/LightAutoML
+
+    https://github.com/EpistasisLab/tpot
+
+    https://github.com/NVIDIA-Merlin/NVTabular
+
+    https://github.com/asavinov/intelligent-trading-bot
+
+    https://github.com/alteryx/featuretools
