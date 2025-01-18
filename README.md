@@ -1,5 +1,11 @@
 # Jupyter notebooks with Demos of Feature-engine's functionality
 
+## External Command
+
+```bash
+nbconverter "/home/hung/Documents/LEARN/spideynolove/feature-engine-tutorials/discretisation/"
+```
+
 ![PythonVersion](https://img.shields.io/badge/python-3.6%20|3.7%20|%203.8%20|%203.9-success)
 [![License https://github.com/feature-engine/feature_engine/blob/master/LICENSE.md](https://img.shields.io/badge/license-BSD-success.svg)](https://github.com/feature-engine/feature-engine-examples/blob/master/LICENSE.md)
 [![Sponsorship https://www.trainindata.com/](https://img.shields.io/badge/Powered%20By-TrainInData-orange.svg)](https://www.trainindata.com/)
