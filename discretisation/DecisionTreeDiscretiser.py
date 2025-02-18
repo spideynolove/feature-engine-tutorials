@@ -1,26 +1,7 @@
-# Generated from: DecisionTreeDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
-
 # # DecisionTreeDiscretiser
-#
 # The DecisionTreeDiscretiser() divides continuous numerical variables into discrete, finite, values estimated by a decision tree.
-#
 # The methods is inspired by the following article from the winners of the KDD 2009 competition:
 # http://www.mtome.com/Publications/CiML/CiML-v3-book.pdf
-#
-# **Note**
-#
-# For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:
-#
-# Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3
-#
-# http://jse.amstat.org/v19n3/decock.pdf
-#
-# https://www.tandfonline.com/doi/abs/10.1080/10691898.2011.11889627
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
-
 
 import pandas as pd
 import numpy as np
@@ -34,11 +15,7 @@ plt.rcParams["figure.figsize"] = [15,5]
 
 
 # ## DecisionTreeDiscretiser with Regression
-
-
 data = pd.read_csv('housing.csv')
-data.head()
-
 
 # let's separate into training and testing set
 X = data.drop(["Id", "SalePrice"], axis=1)
@@ -50,9 +27,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 print("X_train :", X_train.shape)
 print("X_test :", X_test.shape)
 
-
 # we will discretise two continuous variables
-
 X_train[["LotArea", 'GrLivArea']].hist(bins=50)
 plt.show()
 
@@ -115,38 +90,26 @@ treeDisc = DecisionTreeDiscretiser(cv=3,
 # the DecisionTreeDiscretiser needs the target for fitting
 treeDisc.fit(X_train, y_train)
 
-
 # the binner_dict_ contains the best decision tree for each variable
 treeDisc.binner_dict_
-
 
 train_t = treeDisc.transform(X_train)
 test_t = treeDisc.transform(X_test)
 
-
 # the below account for the best obtained bins, aka, the tree predictions
-
 train_t['GrLivArea'].unique()
 
-
 # the below account for the best obtained bins, aka, the tree predictions
-
 train_t['LotArea'].unique()
 
 
 # here I put side by side the original variable and the transformed variable
-
 tmp = pd.concat([X_train[["LotArea", 'GrLivArea']],
                  train_t[["LotArea", 'GrLivArea']]], axis=1)
 
 tmp.columns = ["LotArea", 'GrLivArea', "LotArea_binned", 'GrLivArea_binned']
 
-tmp.head()
-
-
-# in  equal frequency discretisation, we obtain the same amount of observations
-# in each one of the bins.
-
+# in  equal frequency discretisation, we obtain the same amount of observations in each one of the bins.
 plt.subplot(1,2,1)
 tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
 plt.ylabel('Number of houses')
@@ -161,10 +124,7 @@ plt.show()
 
 
 # ## DecisionTreeDiscretiser with binary classification
-
-
 # Load titanic dataset from OpenML
-
 def load_titanic():
     data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = data.replace('?', np.nan)
@@ -176,11 +136,9 @@ def load_titanic():
     data.drop(['name', 'ticket', 'boat', 'home.dest'], axis=1, inplace=True)
     return data
 
-
 # load data
 data = load_titanic()
 data.head()
-
 
 # let's separate into training and testing set
 

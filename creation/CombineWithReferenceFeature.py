@@ -1,17 +1,5 @@
-# Generated from: CombineWithReferenceFeature.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
-
-#
 # ## Feature Creation: Combine with reference feature
-#
 # The CombineWithReferenceFeature() applies combines a group of variables with a group of reference variables utilising mathematical operations ['sub', 'div','add','mul'], returning one or more additional features as a result.
-#
-# For this demonstration, we use the UCI Wine Quality Dataset.
-#
-# The data is publicly available on [UCI repository](https://archive.ics.uci.edu/ml/datasets/Wine+Quality)
-#
-# P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. Modeling wine preferences by data mining from physicochemical properties. In Decision Support Systems, Elsevier, 47(4):547-553, 2009.
-
 
 import pandas as pd
 import numpy as np
@@ -115,19 +103,6 @@ div_with_reference_feature = RelativeFeatures(
 
 # # Create the Combinators
 
-# sub_with_reference_feature = MathFeatures(
-#     variables=['total sulfur dioxide', 'free sulfur dioxide'],
-#     func=operator.sub,
-#     new_variables_names=['non_free_sulfur_dioxide']
-# )
-
-# div_with_reference_feature = MathFeatures(
-#     variables=['free sulfur dioxide', 'total sulfur dioxide'],
-#     func=operator.truediv,
-#     new_variables_names=['percentage_free_sulfur']
-# )
-
-
 # Fit the Sub Combinator on training data
 sub_with_reference_feature.fit(data)
 
@@ -147,59 +122,29 @@ data_t.head()
 
 
 # #### Combine with more than 1 operation
-#
-# We can also combine the variables with more than 1 mathematical operation. And the transformer has the option to create variable names automatically.
-#
-# Here we will create the following variables:
-#
-# - ratio_fixed_to_volatile_acidity = fixed acidity / volatile acidity
-# - total_acidity = fixed acidity + volatile acidity
-
-
 # Create the Combinator
-
 multiple_combinator = RelativeFeatures(
     variables=['fixed acidity'],
     reference=['volatile acidity'],
     func=['div', 'add'],
 )
 
-
-# multiple_combinator = MathFeatures(
-#     variables=['fixed acidity', 'volatile acidity'],
-#     func=[binary_div, binary_add],
-#     new_variables_names=['ratio_fixed_to_volatile', 'total_acidity']
-# )
-
-
 # Fit the Combinator to the training data
-
 multiple_combinator.fit(data_t)
 
-
 # Transform the data
-
 data_t = multiple_combinator.transform(data_t)
-
-
 # Note the additional variables at the end of the dataframe
-
 data_t.head()
 
 
 # ### Pipeline Example
-#
 # We can put all these transformations into single pipeline:
-#
 # Create new variables scale features and train a Logistic Regression model to predict the wine quality range.
-#
 # See more on how to use Feature-engine within Scikit-learn Pipelines in these [examples](https://github.com/solegalli/feature_engine/tree/master/examples/Pipelines)
 
-
 X = data.drop(['quality_range'], axis=1)
-
 y = data.quality_range
-
 X_train, X_test, y_train, y_test = train_test_split(X,
                                                     y,
                                                     test_size=0.1,
@@ -242,44 +187,10 @@ value_pipe = pipe([
 ])
 
 
-# value_pipe = pipe([
-
-#     # Create new features
-#     ('subtraction', MathFeatures(
-#         variables=['total sulfur dioxide', 'free sulfur dioxide'],
-#         func=binary_sub,
-#         new_variables_names=['non_free_sulfur_dioxide']
-#     )
-#     ),
-
-#     ('ratio', MathFeatures(
-#         variables=['free sulfur dioxide', 'total sulfur dioxide'],
-#         func=binary_div,
-#         new_variables_names=['percentage_free_sulfur']
-#     )
-#     ),
-
-#     ('acidity', MathFeatures(
-#         variables=['fixed acidity', 'volatile acidity'],
-#         func=[binary_div, binary_add],
-#         new_variables_names=['ratio_fixed_to_volatile', 'total_acidity']
-#     )
-#     ),
-
-#     # scale features
-#     ('scaler', StandardScaler()),
-
-#     # Logistic Regression
-#     ('LogisticRegression', LogisticRegression())
-# ])
-
-
 value_pipe.fit(X_train, y_train)
-
 
 pred_train = value_pipe.predict(X_train)
 pred_test = value_pipe.predict(X_test)
-
 
 print('Logistic Regression Model train accuracy score: {}'.format(
     accuracy_score(y_train, pred_train)))
@@ -289,10 +200,8 @@ print()
 print('Logistic Regression Model test accuracy score: {}'.format(
     accuracy_score(y_test, pred_test)))
 
-
 print('Logistic Regression Model test classification report: \n\n {}'.format(
     classification_report(y_test, pred_test)))
-
 
 score = round(accuracy_score(y_test, pred_test), 3)
 cm = confusion_matrix(y_test, pred_test)
@@ -305,7 +214,6 @@ plt.show()
 
 
 # Predict probabilities for the test data
-
 probs = value_pipe.predict_proba(X_test)[:, 1]
 
 # Get the ROC Curve
@@ -319,4 +227,3 @@ plt.xlabel('False Positive Rate = 1 - Specificity Score')
 plt.ylabel('True Positive Rate  = Recall Score')
 plt.title('ROC Curve')
 plt.show()
-

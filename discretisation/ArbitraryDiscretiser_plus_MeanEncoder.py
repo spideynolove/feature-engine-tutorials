@@ -1,26 +1,14 @@
-# Generated from: ArbitraryDiscretiser_plus_MeanEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
-
 # # ArbitraryDiscretiser + MeanEncoder
-#
 # This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
 
-
 # ## ArbitraryDiscretiser
-#
 # The ArbitraryDiscretiser() divides continuous numerical variables into contiguous intervals arbitrarily defined by the user.
-#
 # The user needs to enter a dictionary with variable names as keys, and a list of the limits of the intervals as values. For example {'var1': [0, 10, 100, 1000],'var2': [5, 10, 15, 20]}.
-#
 # <b>Note:</b> Check out the ArbitraryDiscretiser notebook to learn more about this transformer.
 
-
 # ## MeanEncoder
-#
 # The MeanEncoder() replaces the labels of the variables by the mean value of the target for that label. <br>For example, in the variable colour, if the mean value of the binary target is 0.5 for the label blue, then blue is replaced by 0.5
-#
 # <b>Note:</b> Read MeanEncoder notebook to know more about this transformer
-
 
 import pandas as pd
 import numpy as np
@@ -34,9 +22,7 @@ from feature_engine.encoding import MeanEncoder
 
 plt.rcParams["figure.figsize"] = [15,5]
 
-
 # Load titanic dataset from OpenML
-
 def load_titanic():
     # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv('titanic.csv')
@@ -51,8 +37,6 @@ def load_titanic():
 
 
 data = load_titanic()
-data.head()
-
 
 # let's separate into training and testing set
 X = data.drop(['survived'], axis=1)
@@ -87,18 +71,12 @@ transformer = Pipeline(steps=[('ArbitraryDiscretiser', arb_disc),
 # train the pipeline
 transformer.fit(X_train, y_train)
 
-
 transformer.named_steps['ArbitraryDiscretiser'].binner_dict_
-
 
 transformer.named_steps['MeanEncoder'].encoder_dict_
 
-
 train_t = transformer.transform(X_train)
 test_t = transformer.transform(X_test)
-
-test_t.head()
-
 
 # let's explore the monotonic relationship
 plt.figure(figsize=(7, 5))
@@ -108,6 +86,4 @@ plt.xlabel("fare")
 plt.ylabel("Mean of target")
 plt.show()
 
-
 # We can observe an almost linear relationship between the variable "fare" after the transformation and the target.
-

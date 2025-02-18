@@ -1,25 +1,6 @@
-# Generated from: ArbitraryDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
-
 # # ArbitraryDiscretiser
-#
 # The ArbitraryDiscretiser() divides continuous numerical variables into contiguous intervals are arbitrarily entered by the user.
-#
 # The user needs to enter a dictionary with variable names as keys, and a list of the limits of the intervals as values. For example {'var1': [0, 10, 100, 1000], 'var2': [5, 10, 15, 20]}.
-#
-# **Note**
-#
-# For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:
-#
-# Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3
-#
-# http://jse.amstat.org/v19n3/decock.pdf
-#
-# https://www.tandfonline.com/doi/abs/10.1080/10691898.2011.11889627
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
-
 
 import pandas as pd
 import numpy as np
@@ -29,21 +10,6 @@ from sklearn.model_selection import train_test_split
 
 from feature_engine.discretisation import ArbitraryDiscretiser
 plt.rcParams["figure.figsize"] = [15,5]
-
-
-data = pd.read_csv('housing.csv')
-data.head()
-
-
-# # let's separate into training and testing set
-# X = data.drop(["Id", "SalePrice"], axis=1)
-# y = data.SalePrice
-
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
-# print("X_train :", X_train.shape)   # (1022, 79)
-# print("X_test :", X_test.shape)     # (438, 79)
-
 
 # Read the separate files
 train_df = pd.read_csv('house-prices/train.csv')
@@ -59,9 +25,7 @@ X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePric
 print("X_train :", X_train.shape)
 print("X_test :", X_test.shape)
 
-
 # we will discretise two continuous variables
-
 X_train[["LotArea", 'GrLivArea']].hist(bins=50)
 plt.show()
 
@@ -73,7 +37,6 @@ plt.show()
 #
 # Then it transforms the variables, that is, it sorts the values into the intervals,
 # transform.
-
 
 '''
 Parameters
@@ -101,19 +64,15 @@ atd = ArbitraryDiscretiser(binning_dict={"LotArea":[-np.inf,4000,8000,12000,1600
 
 atd.fit(X_train)
 
-
 # binner_dict contains the boundaries of the different bins
 atd.binner_dict_
-
 
 train_t = atd.transform(X_train)
 test_t = atd.transform(X_test)
 
-
 # the below are the bins into which the observations were sorted
 print(train_t['GrLivArea'].unique())
 print(train_t['LotArea'].unique())
-
 
 # here I put side by side the original variable and the transformed variable
 tmp = pd.concat([X_train[["LotArea", 'GrLivArea']], train_t[["LotArea", 'GrLivArea']]], axis=1)
@@ -134,8 +93,6 @@ plt.show()
 
 
 # ### Now return interval boundaries instead
-
-
 atd = ArbitraryDiscretiser(binning_dict={"LotArea": [-np.inf, 4000, 8000, 12000, 16000, 20000, np.inf],
                                          "GrLivArea": [-np.inf, 500, 1000, 1500, 2000, 2500, np.inf]},
                            # to return the boundary limits
@@ -152,9 +109,7 @@ test_t = atd.transform(X_test)
 # were sorted
 np.sort(np.ravel(train_t['GrLivArea'].unique()))
 
-
 np.sort(np.ravel(test_t['GrLivArea'].unique()))
-
 
 # bar plot to show the intervals returned by the transformer
 test_t.LotArea.value_counts(sort=False).plot.bar(figsize=(6,4))
