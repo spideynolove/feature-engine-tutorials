@@ -37,24 +37,34 @@ from  feature_engine.imputation import CategoricalImputer
 # ## Load data
 
 
-# Download the data from Kaggle and store it
-# in the same folder as this notebook.
+# # Download the data from Kaggle and store it in the same folder as this notebook.
+# data = pd.read_csv('../data/housing.csv')
+# data.head()
 
-data = pd.read_csv('houseprice.csv')
+# # Separate the data into train and test sets.
+# X_train, X_test, y_train, y_test = train_test_split(
+#     data.drop(['Id', 'SalePrice'], axis=1),
+#     data['SalePrice'],
+#     test_size=0.3,
+#     random_state=0,
+# )
 
-data.head()
+# X_train.shape, X_test.shape
 
 
-# Separate the data into train and test sets.
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    data.drop(['Id', 'SalePrice'], axis=1),
-    data['SalePrice'],
-    test_size=0.3,
-    random_state=0,
-)
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
 
-X_train.shape, X_test.shape
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
 
 
 # ## Check missing data

@@ -36,17 +36,30 @@ from feature_engine.discretisation import EqualFrequencyDiscretiser
 plt.rcParams["figure.figsize"] = [15,5]
 
 
-data = pd.read_csv('housing.csv')
+# data = pd.read_csv('../data/housing.csv')
+# data.head()
 
-data.head()
+# # let's separate into training and testing set
+# X = data.drop(["Id", "SalePrice"], axis=1)
+# y = data.SalePrice
+
+# X_train, X_test, y_train, y_test = train_test_split(
+#     X, y, test_size=0.3, random_state=0)
+
+# print("X_train :", X_train.shape)
+# print("X_test :", X_test.shape)
 
 
-# let's separate into training and testing set
-X = data.drop(["Id", "SalePrice"], axis=1)
-y = data.SalePrice
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, random_state=0)
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
 
 print("X_train :", X_train.shape)
 print("X_test :", X_test.shape)

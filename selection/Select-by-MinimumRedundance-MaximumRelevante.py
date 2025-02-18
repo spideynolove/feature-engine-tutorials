@@ -309,7 +309,6 @@ def evaluate_clf_feature_selection_range(X: pd.DataFrame, y: pd.DataFrame, scori
         evaluation_data["score_time"].append(score_time)
         
     return pd.DataFrame(evaluation_data)
-    
 
 
 
@@ -320,7 +319,11 @@ evaluation_df = evaluate_clf_feature_selection_range(X, y, "f1", 15)
 
 
 import hiplot
+from IPython.display import HTML
 
-html = hiplot.Experiment.from_dataframe(evaluation_df).to_html()
-displayHTML(html)
+# html = hiplot.Experiment.from_dataframe(evaluation_df).to_html()
+# displayHTML(html)
+
+exp = hiplot.Experiment.from_dataframe(evaluation_df)
+HTML(exp.to_html())
 

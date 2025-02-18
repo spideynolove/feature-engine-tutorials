@@ -36,7 +36,7 @@ from feature_engine import encoding as ce
 
 
 # load training data
-data = pd.read_csv('train.csv')
+data = pd.read_csv('../data/house-prices/train.csv')
 
 
 # make lists of variable types

@@ -20,19 +20,21 @@ from feature_engine.encoding import RareLabelEncoder
 
 # Load titanic dataset from OpenML
 
-def load_titanic():
-    data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+def load_titanic(filepath='titanic.csv'):
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
     data['pclass'] = data['pclass'].astype('O')
-    data['age'] = data['age'].astype('float')
-    data['fare'] = data['fare'].astype('float')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    data.drop(labels=['boat', 'body', 'home.dest'], axis=1, inplace=True)
+    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-data = load_titanic()
+# data = load_titanic("../data/titanic.csv")
+data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
 
@@ -53,7 +55,6 @@ X[['cabin', 'pclass', 'embarked']].dtypes
 
 # let's separate into training and testing set
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
 X_train.shape, X_test.shape
 
 
@@ -75,7 +76,7 @@ X_train.shape, X_test.shape
 # (object type).
 
 
-## Rare value encoder
+# Rare value encoder
 '''
 Parameters
 ----------
@@ -102,7 +103,7 @@ replace_with : string, default='Rare'
     The category name that will be used to replace infrequent categories.
 '''
 
-rare_encoder = RareLabelEncoder(tol=0.05, 
+rare_encoder = RareLabelEncoder(tol=0.05,
                                 n_categories=5,
                                 variables=['cabin', 'pclass', 'embarked'])
 rare_encoder.fit(X_train)
@@ -123,13 +124,12 @@ test_t.cabin.value_counts()
 # #### The user can change the string from 'Rare' to something else.
 
 
-## Rare value encoder
-
-rare_encoder = RareLabelEncoder(tol = 0.03,
-                                replace_with='Other', #replacing 'Rare' with 'Other'
+# Rare value encoder
+rare_encoder = RareLabelEncoder(tol=0.03,
+                                replace_with='Other',  # replacing 'Rare' with 'Other'
                                 variables=['cabin', 'pclass', 'embarked'],
                                 n_categories=2
-                           )
+                                )
 
 rare_encoder.fit(X_train)
 
@@ -148,15 +148,14 @@ test_t.cabin.value_counts()
 # #### The user can choose to retain only the most popular categories with the argument max_n_categories.
 
 
-## Rare value encoder
+# Rare value encoder
 
-rare_encoder = RareLabelEncoder(tol = 0.03,
+rare_encoder = RareLabelEncoder(tol=0.03,
                                 variables=['cabin', 'pclass', 'embarked'],
                                 n_categories=2,
-                                
-                                max_n_categories=3 #keeps only the most popular 3 categories in every variable.
-                                
-                           )
+                                # keeps only the most popular 3 categories in every variable.
+                                max_n_categories=3
+                                )
 
 rare_encoder.fit(X_train)
 
@@ -174,17 +173,31 @@ rare_encoder.encoder_dict_
 # If no variable list is passed as argument, it selects all the categorical variables.
 
 
+len(X_train['pclass'].unique()), len(X_train['sex'].unique()), len(X_train['embarked'].unique())
+
+
+# # X_train['pclass'].value_counts(dropna=False)
+# pclass_encoder = RareLabelEncoder(tol=0.03, n_categories=3)
+# X_train['pclass'] = pclass_encoder.fit_transform(X_train[['pclass']])
+
+
+# # X_train['sex'].value_counts(dropna=False)
+# sex_encoder = RareLabelEncoder(tol=0.03, n_categories=2)
+# X_train['sex'] = sex_encoder.fit_transform(X_train[['sex']])
+
+
+# # X_train['embarked'].value_counts(dropna=False)
+# embarked_encoder = RareLabelEncoder(tol=0.03, n_categories=3)
+# X_train['embarked'] = embarked_encoder.fit_transform(X_train[['embarked']])
+
+
 ## Rare value encoder
-
 rare_encoder = RareLabelEncoder(tol = 0.03, n_categories=3)
-
 rare_encoder.fit(X_train)
-
 rare_encoder.encoder_dict_
 
 
 train_t = rare_encoder.transform(X_train)
 test_t = rare_encoder.transform(X_train)
-
 test_t.sample(5)
 

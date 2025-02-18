@@ -43,19 +43,21 @@ plt.rcParams["figure.figsize"] = [15,5]
 
 # Load titanic dataset from OpenML
 
-def load_titanic():
-    data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+def load_titanic(filepath='titanic.csv'):
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
     data['pclass'] = data['pclass'].astype('O')
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
+    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-data = load_titanic()
+# data = load_titanic("../data/titanic.csv")
+data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
 
@@ -112,7 +114,4 @@ plt.title("Relationship between fare and target")
 plt.xlabel("fare")
 plt.ylabel("Mean of target")
 plt.show()
-
-
-# Note how now the intervals are monotonically sorted respect to the target.
 

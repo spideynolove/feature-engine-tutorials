@@ -45,7 +45,7 @@ from feature_engine import encoding as ce
 
 # Load dataset
 
-filename = '../adult.data'
+filename = '../data/adult/adult.data'
 col_names = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'capital-gain','capital-loss', 'hours-per-week', 'native-country','income']
 data = pd.read_csv(filename, sep=',', names=col_names)
 
@@ -80,7 +80,8 @@ plt.show()
 # plot of categoricals
 
 for var in categorical:
-    sns.catplot(data=data, y=var, kind="count", palette="ch:.25")
+    # sns.catplot(data=data, y=var, kind="count", palette="ch:.25")
+    sns.catplot(data=data, y=var, hue=var,kind="count", palette="ch:.25", legend=False)
 
 
 # transform the income value (target variable)

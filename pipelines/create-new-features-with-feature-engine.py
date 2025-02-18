@@ -28,12 +28,13 @@ from sklearn.pipeline import Pipeline
 
 
 # import classes from Feature-engine
-from feature_engine.creation import MathematicalCombination, CombineWithReferenceFeature
+from feature_engine.creation import RelativeFeatures, MathFeatures
+# from feature_engine.creation import MathFeatures, RelativeFeatures
 
 
 # Load dataset
 
-data = pd.read_csv('winequality-red.csv', sep=';')
+data = pd.read_csv('../data/winequality-red.csv', sep=';')
 
 print(data.shape)
 
@@ -160,9 +161,9 @@ plt.show()
 # combine fixed and volatile acidity to create total acidity
 # and mean acidity
 
-combinator = MathematicalCombination(
-    variables_to_combine=['fixed acidity', 'volatile acidity'],
-    math_operations = ['sum', 'mean'],
+combinator = MathFeatures(
+    variables=['fixed acidity', 'volatile acidity'],
+    func = ['sum', 'mean'],
     new_variables_names = ['total_acidity', 'average_acidity']
 )
 
@@ -174,9 +175,9 @@ data.head()
 
 # let's combine salts into total minerals and average minerals
 
-combinator = MathematicalCombination(
-    variables_to_combine=['chlorides', 'sulphates'],
-    math_operations = ['sum', 'mean'],
+combinator = MathFeatures(
+    variables=['chlorides', 'sulphates'],
+    func = ['sum', 'mean'],
     new_variables_names = ['total_minerals', 'average_minerals']
 )
 
@@ -188,11 +189,11 @@ data.head()
 
 # let's determine the sulfur that is not free
 
-combinator = CombineWithReferenceFeature(
-    variables_to_combine=['total sulfur dioxide'],
-    reference_variables=['free sulfur dioxide'],
-    operations=['sub'],
-    new_variables_names=['non_free_sulfur_dioxide']
+combinator = RelativeFeatures(
+    variables=['total sulfur dioxide'],
+    reference=['free sulfur dioxide'],
+    func=['sub'],
+    # new_variables_names=['non_free_sulfur_dioxide']
 )
 
 data = combinator.fit_transform(data)
@@ -203,11 +204,11 @@ data.head()
 
 # let's calculate the % of free sulfur
 
-combinator = CombineWithReferenceFeature(
-    variables_to_combine=['free sulfur dioxide'],
-    reference_variables=['total sulfur dioxide'],
-    operations=['div'],
-    new_variables_names=['percentage_free_sulfur']
+combinator = RelativeFeatures(
+    variables=['free sulfur dioxide'],
+    reference=['total sulfur dioxide'],
+    func=['div'],
+    # new_variables_names=['percentage_free_sulfur']
 )
 
 data = combinator.fit_transform(data)
@@ -218,17 +219,20 @@ data.head()
 
 # let's determine from all free sulfur how much is as salt
 
-combinator = CombineWithReferenceFeature(
-    variables_to_combine=['sulphates'],
-    reference_variables=['free sulfur dioxide'],
-    operations=['div'],
-    new_variables_names=['percentage_salt_sulfur']
+combinator = RelativeFeatures(
+    variables=['sulphates'],
+    reference=['free sulfur dioxide'],
+    func=['div'],
+    # new_variables_names=['percentage_salt_sulfur']
 )
 
 data = combinator.fit_transform(data)
 
 # note the new variable at the end of the dataframe
 data.head()
+
+
+data.columns
 
 
 # now let's explore the new variables with boxplots
@@ -238,9 +242,18 @@ new_vars = [
     'average_acidity',
     'total_minerals',
     'average_minerals',
-    'non_free_sulfur_dioxide',
-    'percentage_free_sulfur',
-    'percentage_salt_sulfur']
+    
+    'total sulfur dioxide_sub_free sulfur dioxide',
+    'free sulfur dioxide_div_total sulfur dioxide',
+    'free sulfur dioxide_div_total sulfur dioxide',
+
+    # 'non_free_sulfur_dioxide',
+    # 'percentage_free_sulfur',
+    # 'percentage_salt_sulfur'
+]
+
+# KeyError: "['non_free_sulfur_dioxide', 'percentage_free_sulfur', 
+# 'percentage_salt_sulfur'] not in index"
 
 # reorganise for plotting
 df = data[new_vars+['quality']].melt(id_vars=['quality'])
@@ -259,7 +272,7 @@ plt.show()
 # Now we are going to carry out all variable creation within a Scikit-learn Pipeline and add a classifier at the end.
 
 
-data = pd.read_csv('winequality-red.csv', sep=';')
+data = pd.read_csv('../data/winequality-red.csv', sep=';')
 
 # make binary target
 data['quality'] = np.where(data['quality'] <= 6, 0, 1)
@@ -276,41 +289,41 @@ X_train.shape, X_test.shape
 
 pipe = Pipeline([
     # variable creation
-    ('acidity', MathematicalCombination(
-        variables_to_combine=['fixed acidity', 'volatile acidity'],
-        math_operations = ['sum', 'mean'],
+    ('acidity', MathFeatures(
+        variables=['fixed acidity', 'volatile acidity'],
+        func = ['sum', 'mean'],
         new_variables_names = ['total_acidity', 'average_acidity']
         )
     ),
     
-    ('total_minerals', MathematicalCombination(
-        variables_to_combine=['chlorides', 'sulphates'],
-        math_operations = ['sum', 'mean'],
+    ('total_minerals', MathFeatures(
+        variables=['chlorides', 'sulphates'],
+        func = ['sum', 'mean'],
         new_variables_names = ['total_minerals', 'average_minearals'],
         )
     ),
     
-    ('non_free_sulfur', CombineWithReferenceFeature(
-        variables_to_combine=['total sulfur dioxide'],
-        reference_variables=['free sulfur dioxide'],
-        operations=['sub'],
-        new_variables_names=['non_free_sulfur_dioxide'],
+    ('non_free_sulfur', RelativeFeatures(
+        variables=['total sulfur dioxide'],
+        reference=['free sulfur dioxide'],
+        func=['sub'],
+        # new_variables_names=['non_free_sulfur_dioxide'],
         )
     ),
     
-    ('perc_free_sulfur', CombineWithReferenceFeature(
-        variables_to_combine=['free sulfur dioxide'],
-        reference_variables=['total sulfur dioxide'],
-        operations=['div'],
-        new_variables_names=['percentage_free_sulfur'],
+    ('perc_free_sulfur', RelativeFeatures(
+        variables=['free sulfur dioxide'],
+        reference=['total sulfur dioxide'],
+        func=['div'],
+        # new_variables_names=['percentage_free_sulfur'],
         )
     ),
     
-    ('perc_salt_sulfur', CombineWithReferenceFeature(
-        variables_to_combine=['sulphates'],
-        reference_variables=['free sulfur dioxide'],
-        operations=['div'],
-        new_variables_names=['percentage_salt_sulfur'],
+    ('perc_salt_sulfur', RelativeFeatures(
+        variables=['sulphates'],
+        reference=['free sulfur dioxide'],
+        func=['div'],
+        # new_variables_names=['percentage_salt_sulfur'],
         )
     ),
     

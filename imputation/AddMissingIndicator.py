@@ -42,24 +42,34 @@ from feature_engine.imputation import (
 # ## Load data
 
 
-# Download the data from Kaggle and store it
-# in the same folder as this notebook.
+# # Download the data from Kaggle and store it in the same folder as this notebook.
+# data = pd.read_csv('../data/housing.csv')
+# data.head()
 
-data = pd.read_csv('houseprice.csv')
+# # Separate the data into train and test sets.
+# X_train, X_test, y_train, y_test = train_test_split(
+#     data.drop(['Id', 'SalePrice'], axis=1),
+#     data['SalePrice'],
+#     test_size=0.3,
+#     random_state=0,
+# )
 
-data.head()
+# X_train.shape, X_test.shape
 
 
-# Separate the data into train and test sets.
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    data.drop(['Id', 'SalePrice'], axis=1),
-    data['SalePrice'],
-    test_size=0.3,
-    random_state=0,
-)
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
 
-X_train.shape, X_test.shape
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
 
 
 # ## Add indicators
@@ -276,17 +286,14 @@ X_train.shape, train_t.shape
 # Create a pipeline with the imputation strategy
 
 pipe = Pipeline([
-    
     # add indicators to variables with NA
     ('indicators', AddMissingIndicator(
         missing_only=True,
     )),
-
     # impute all numerical variables with the median
     ('imputer_num', MeanMedianImputer(
         imputation_method='median',
     )),
-
     # impute all categorical variables with the mode
     ('imputer_cat', CategoricalImputer(
         imputation_method='frequent',
@@ -294,41 +301,32 @@ pipe = Pipeline([
 ])
 
 
-# With fit() the transformers learn the 
-# required parameters.
-
+# With fit() the transformers learn the required parameters.
 pipe.fit(X_train)
 
 
-# We can look into the attributes of the
-# different transformers.
-
+# We can look into the attributes of the different transformers.
 # Check the variables that will take indicators.
 pipe.named_steps['indicators'].variables_
 
 
 # Check the median values for the imputation.
-
 pipe.named_steps['imputer_num'].imputer_dict_
 
 
 # Check the mode values for the imputation.
-
 pipe.named_steps['imputer_cat'].imputer_dict_
 
 
 # Now, we transform the data.
-
 train_t = pipe.transform(X_train)
 test_t = pipe.transform(X_test)
 
 
 # We should see a complete case dataset
-
 train_t.isnull().sum()
 
 
 # Sanity check
-
 [v for v in train_t.columns if train_t[v].isnull().sum() > 1]
 

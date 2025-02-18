@@ -21,12 +21,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
-from sklearn.datasets import load_boston
+from sklearn.datasets import fetch_california_housing
+# from sklearn.datasets import load_boston
 from feature_engine.transformation import LogCpTransformer
 
 
 # Load dataset
-X, y = load_boston(return_X_y=True)
+X, y = fetch_california_housing(return_X_y=True)
 X = pd.DataFrame(X)
 
 # Separate into train and test sets
@@ -38,7 +39,14 @@ X_train, X_test, y_train, y_test =  train_test_split(X, y, test_size=0.3, random
 # Additionally notice that we define the transformer to automatically find the constant C `C="auto"`. Internally, each variable constant is calculated with the formula `C = abs(min(x)) + 1`.
 
 
-num_feats = [7, 12]
+print("Column names:", list(X_train.columns))
+print("\nColumn positions:")
+for i, col in enumerate(X_train.columns):
+    print(f"{i}: {col}")
+
+
+# num_feats = [7, 12]
+num_feats = [6, 7]
 
 # set up the variable transformer
 tf = LogCpTransformer(variables=num_feats, C="auto")

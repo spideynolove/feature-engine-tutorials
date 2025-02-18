@@ -40,7 +40,7 @@ from feature_engine.selection import DropHighPSIFeatures
 
 
 # load data
-data = pd.read_csv('../crx.data', header=None)
+data = pd.read_csv('../data/credit+approval/crx.data', header=None)
 
 # add variable names according to UCI Machine Learning
 # Repo information

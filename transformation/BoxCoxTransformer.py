@@ -36,17 +36,31 @@ from feature_engine.imputation import ArbitraryNumberImputer, CategoricalImputer
 from feature_engine.transformation import BoxCoxTransformer
 
 
-#Read data
-data = pd.read_csv('houseprice.csv')
-data.head()
+# #Read data
+# data = pd.read_csv('houseprice.csv')
+# data.head()
+
+# # let's separate into training and testing set
+
+# X_train, X_test, y_train, y_test = train_test_split(
+#     data.drop(['Id', 'SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+
+# X_train.shape, X_test.shape
 
 
-# let's separate into training and testing set
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    data.drop(['Id', 'SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
 
-X_train.shape, X_test.shape
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
 
 
 # let's transform 2 variables
@@ -103,15 +117,29 @@ variables = ['LotFrontage', 'LotArea',
              '1stFlrSF', 'GrLivArea',
              'TotRmsAbvGrd', 'SalePrice']
 
-data = pd.read_csv('houseprice.csv', usecols=variables)
+
+# data = pd.read_csv('houseprice.csv', usecols=variables)
+
+# # let's separate into training and testing set
+# X_train, X_test, y_train, y_test = train_test_split(
+#     data.drop(['SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+
+# X_train.shape, X_test.shape
 
 
-# let's separate into training and testing set
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    data.drop(['SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
 
-X_train.shape, X_test.shape
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
 
 
 # Impute missing values
@@ -125,11 +153,63 @@ train_t = arbitrary_imputer.transform(X_train)
 test_t = arbitrary_imputer.transform(X_test)
 
 
+numeric_columns = train_t.select_dtypes(include=['int64', 'float64']).columns
+numeric_columns
+
+
+train_numeric = train_t[numeric_columns].copy()
+
+
+for column in numeric_columns:
+    min_val = train_numeric[column].min()
+    if min_val <= 0:
+        print(f"{column}: minimum value = {min_val}")
+        shift = abs(min_val) + 1
+        train_numeric[column] = train_numeric[column] + shift
+
+
+
+train_numeric.describe()
+
+
+# Check for extremely large values
+for col in train_numeric.columns:
+    q75 = train_numeric[col].quantile(0.75)
+    q25 = train_numeric[col].quantile(0.25)
+    iqr = q75 - q25
+    upper_bound = q75 + 1.5 * iqr
+    
+    if train_numeric[col].max() > upper_bound:
+        print(f"\n{col}:")
+        print(f"Max value: {train_numeric[col].max()}")
+        print(f"Upper bound: {upper_bound}")
+
+
+# # Temp
+# from feature_engine.transformation import YeoJohnsonTransformer
+# from feature_engine.outliers import Winsorizer
+
+# # First winsorize the outliers
+# winsor = Winsorizer(capping_method='iqr', tail='both', fold=1.5)
+# train_winsorized = winsor.fit_transform(train_numeric)
+
+# # Then apply YeoJohnson transformation (which handles both positive and negative values)
+# yjt = YeoJohnsonTransformer()
+# train_transformed = yjt.fit_transform(train_winsorized)
+
+# # Check the results
+# print("\nSkewness before transformation:")
+# print(train_numeric.skew())
+# print("\nSkewness after transformation:")
+# print(train_transformed.skew())
+
+
 # let's transform all numerical variables
 
 bct = BoxCoxTransformer()
 
-bct.fit(train_t)
+# bct.fit(train_t)
+bct.fit(train_numeric)
 
 
 # variables that will be transformed

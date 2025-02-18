@@ -22,6 +22,9 @@ from feature_engine.selection import SelectBySingleFeaturePerformance
 # ## Classification
 
 
+# data.shape
+
+
 data.head()
 
 

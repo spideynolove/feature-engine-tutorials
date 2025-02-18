@@ -18,34 +18,65 @@ import pandas as pd
 from feature_engine.preprocessing import MatchVariables
 
 
-# Load titanic dataset from OpenML
+# # Load titanic dataset from OpenML
 
-def load_titanic():
-    data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
-    data = data.replace('?', np.nan)
-    data['cabin'] = data['cabin'].astype(str).str[0]
-    data['pclass'] = data['pclass'].astype('O')
-    data['age'] = data['age'].astype('float')
-    data['fare'] = data['fare'].astype('float')
-    data['embarked'].fillna('C', inplace=True)
-    data.drop(
-        labels=['name', 'ticket', 'boat', 'body', 'home.dest'],
-        axis=1, inplace=True,
-    )
-    return data
+# def load_titanic(filepath='../data/titanic.csv'):
+#     # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+#     data = pd.read_csv(filepath)
+#     data = data.replace('?', np.nan)
+#     data['cabin'] = data['cabin'].astype(str).str[0]
+#     data['pclass'] = data['pclass'].astype('O')
+#     data['age'] = data['age'].astype('float')
+#     data['fare'] = data['fare'].astype('float')
+#     data['embarked'].fillna('C', inplace=True)
+#     data.drop(
+#         # labels=['name', 'ticket', 'boat', 'body', 'home.dest'],
+#         labels=['name', 'ticket'],
+#         axis=1, inplace=True,
+#     )
+#     return data
+
+# data = load_titanic()
+# # data.head()
+# # data.shape
+
+# # separate the dataset into train and test
+
+# train = data.iloc[0:1000, :]
+# test = data.iloc[1000:, :]
+
+# train.shape, test.shape
 
 
-data = load_titanic()
+def load_titanic(train_path='../data/titanic-3/train.csv', test_path='../data/titanic-3/test.csv'):
+    # Read both train and test datasets
+    train = pd.read_csv(train_path)
+    test = pd.read_csv(test_path)
+    
+    # Common preprocessing for both datasets
+    def preprocess_df(df):
+        df = df.replace('?', np.nan)
+        df['cabin'] = df['cabin'].astype(str).str[0]
+        df['pclass'] = df['pclass'].astype('O')
+        df['age'] = df['age'].astype('float')
+        df['fare'] = df['fare'].astype('float')
+        df['embarked'].fillna('C', inplace=True)
+        df.drop(
+            labels=['name', 'ticket'],
+            axis=1, inplace=True,
+        )
+        return df
+    
+    # Apply preprocessing to both datasets
+    train = preprocess_df(train)
+    test = preprocess_df(test)
+    
+    return train, test
 
-data.head()
 
-
-# separate the dataset into train and test
-
-train = data.iloc[0:1000, :]
-test = data.iloc[1000:, :]
-
-train.shape, test.shape
+train, test = load_titanic()
+print("Train shape:", train.shape)
+print("Test shape:", test.shape)
 
 
 # set up the transformer
@@ -56,21 +87,23 @@ match_cols.fit(train)
 
 
 # the transformer stores the input variables
-
-match_cols.input_features_
+# match_cols.input_features_
+match_cols.feature_names_in_
 
 
 # ## 1 - Some columns are missing in the test set
 
 
-# Let's drop some columns in the test set for the demo
-test_t = test.drop(["sex", "age"], axis=1)
-
-test_t.head()
+match_cols
 
 
 # Let's drop some columns in the test set for the demo
 test_t = test.drop(["sex", "age"], axis=1)
+
+
+# test.columns
+test_t.shape
+
 
 test_t.head()
 

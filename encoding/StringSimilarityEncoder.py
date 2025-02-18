@@ -16,17 +16,18 @@ from feature_engine.encoding import StringSimilarityEncoder
 
 
 # Helper function for loading and preprocessing data
-def load_titanic() -> pd.DataFrame:
+def load_titanic(filepath='titanic.csv'):
     translate_table = str.maketrans('' , '', string.punctuation)
-    data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
-    data['home.dest'] = (
-        data['home.dest']
-        .str.strip()
-        .str.translate(translate_table)
-        .str.replace('  ', ' ')
-        .str.lower()
-    )
+    # data['home.dest'] = (
+    #     data['home.dest']
+    #     .str.strip()
+    #     .str.translate(translate_table)
+    #     .str.replace('  ', ' ')
+    #     .str.lower()
+    # )
     data['name'] = (
         data['name']
         .str.strip()
@@ -44,8 +45,9 @@ def load_titanic() -> pd.DataFrame:
     return data
 
 
-# Load dataset
-data = load_titanic()
+# data = load_titanic("../data/titanic.csv")
+data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data.head()
 
 
 # Separate into train and test sets
@@ -61,7 +63,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 # set up the encoder
-encoder = StringSimilarityEncoder(top_categories=2, variables=['name', 'home.dest', 'ticket'])
+# encoder = StringSimilarityEncoder(top_categories=2, variables=['name', 'home.dest', 'ticket'])
+encoder = StringSimilarityEncoder(top_categories=2, variables=['name', 'ticket'])
 
 
 # fit the encoder
@@ -87,16 +90,19 @@ test_t.head(5)
 
 # plot encoded column - ticket
 # OHE could produce only 0, but SSE produces values in [0,1] range
-fig, ax = plt.subplots(2, 1);
-train_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_ca 2144', sharex=True, title='Ticket encoding in train', ax=ax[0]);
-test_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_ca 2144', sharex=True, title='Ticket encoding in test', ax=ax[1]);
+fig, ax = plt.subplots(2, 1)
+# train_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_ca 2144', sharex=True, title='Ticket encoding in train', ax=ax[0])
+train_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_347082', sharex=True, title='Ticket encoding in train', ax=ax[0])
+# test_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_ca 2144', sharex=True, title='Ticket encoding in test', ax=ax[1])
+test_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_347082', sharex=True, title='Ticket encoding in test', ax=ax[1])
 
 
 # defining encoder that ignores NaNs
 encoder = StringSimilarityEncoder(
     top_categories=2,
-    handle_missing='ignore',
-    variables=['name', 'home.dest', 'ticket']
+    missing_values='ignore',
+    # variables=['name', 'home.dest', 'ticket']
+    variables=['name', 'ticket']
 )
 
 

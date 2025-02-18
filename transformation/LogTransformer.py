@@ -30,18 +30,32 @@ from feature_engine.imputation import ArbitraryNumberImputer
 from feature_engine.transformation import LogTransformer
 
 
-# load data
+# # load data
 
-data = pd.read_csv('houseprice.csv')
-data.head()
+# data = pd.read_csv('houseprice.csv')
+# data.head()
+
+# # let's separate into training and testing set
+
+# X_train, X_test, y_train, y_test = train_test_split(
+#     data.drop(['Id', 'SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+
+# X_train.shape, X_test.shape
 
 
-# let's separate into training and testing set
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    data.drop(['Id', 'SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
 
-X_train.shape, X_test.shape
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
 
 
 # plot distributions before transformation
@@ -112,15 +126,48 @@ variables = ['LotFrontage', 'LotArea',
              '1stFlrSF', 'GrLivArea',
              'TotRmsAbvGrd', 'SalePrice']
 
-data = pd.read_csv('houseprice.csv', usecols=variables)
 
 
-# let's separate into training and testing set
+# data = pd.read_csv('houseprice.csv', usecols=variables)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    data.drop(['SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+# # let's separate into training and testing set
 
-X_train.shape, X_test.shape
+# X_train, X_test, y_train, y_test = train_test_split(
+#     data.drop(['SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+
+# X_train.shape, X_test.shape
+
+
+
+# # Read the separate files - only reading the columns we need
+# train_df = pd.read_csv('../data/house-prices/train.csv', usecols=['Id'] + variables)
+# test_df = pd.read_csv('../data/house-prices/test.csv', usecols=['Id'] + variables[:-1])  # excluding SalePrice for test
+
+# # Separate features and target in training data
+# X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+# y_train = train_df['SalePrice']
+
+# # For test data, you might not have the target variable
+# X_test = test_df.drop(['Id'], axis=1)
+
+# print("X_train :", X_train.shape)
+# print("X_test :", X_test.shape)
+
+# ----------------------------------------------------------------------------------
+
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
 
 
 # Impute missing values
@@ -134,11 +181,54 @@ train_t = arbitrary_imputer.transform(X_train)
 test_t = arbitrary_imputer.transform(X_test)
 
 
-# transform all numerical variables with base 10
+numeric_columns = train_t.select_dtypes(include=['int64', 'float64']).columns
+# numeric_columns_t = test_t.select_dtypes(include=['int64', 'float64']).columns
 
-lt = LogTransformer(base='10', variables=None)
 
-lt.fit(train_t)
+train_numeric = train_t[numeric_columns].copy()
+# test_numeric = test_t[numeric_columns_t].copy()
+
+
+train_numeric
+
+
+# Define columns where zero is meaningful (count-based features)
+meaningful_zeros = ['BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath', 
+                   'BedroomAbvGr', 'KitchenAbvGr', 'Fireplaces', 'GarageCars',
+                   'PoolArea']
+
+# Define area-based columns that need shifting
+area_columns = ['MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF', 
+                'TotalBsmtSF', '2ndFlrSF', 'LowQualFinSF', 'GarageArea',
+                'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', '3SsnPorch',
+                'ScreenPorch', 'MiscVal']
+
+# Create a copy of the training data
+train_shifted = train_numeric.copy()
+
+# Add small constant (1) only to area-based columns
+for col in area_columns:
+    train_shifted[col] = train_numeric[col] + 1
+
+# Exclude meaningful zeros from log transformation
+variables_to_transform = [col for col in train_numeric.columns if col not in meaningful_zeros]
+
+
+
+# # Check which columns have zeros or negative values
+# problematic_cols = []
+# for col in train_numeric.columns:
+#     if (train_numeric[col] <= 0).any():
+#         problematic_cols.append(col)
+#         print(f"{col}: Min value = {train_numeric[col].min()}")
+
+# print("\nTotal problematic columns:", len(problematic_cols))
+
+
+
+# Now apply log transformation only to specified variables
+lt = LogTransformer(base='10', variables=variables_to_transform)
+lt.fit(train_shifted)
 
 
 # variables that will be transformed
@@ -154,6 +244,9 @@ plt.title('GrLivArea')
 # Before transformation
 train_t['LotArea'].hist(bins=50)
 plt.title('LotArea')
+
+
+train_t.columns
 
 
 # transform the data

@@ -40,24 +40,34 @@ from feature_engine.imputation import EndTailImputer
 # ## Load data
 
 
-# Download the data from Kaggle and store it
-# in the same folder as this notebook.
+# # Download the data from Kaggle and store it in the same folder as this notebook.
+# data = pd.read_csv('../data/housing.csv')
+# data.head()
 
-data = pd.read_csv('houseprice.csv')
+# # Separate the data into train and test sets.
+# X_train, X_test, y_train, y_test = train_test_split(
+#     data.drop(['Id', 'SalePrice'], axis=1),
+#     data['SalePrice'],
+#     test_size=0.3,
+#     random_state=0,
+# )
 
-data.head()
+# X_train.shape, X_test.shape
 
 
-# Separate the data into train and test sets.
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    data.drop(['Id', 'SalePrice'], axis=1),
-    data['SalePrice'],
-    test_size=0.3,
-    random_state=0,
-)
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
 
-X_train.shape, X_test.shape
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
 
 
 # ## Check missing data
@@ -80,28 +90,22 @@ X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
 
 
 imputer = EndTailImputer(
-    
     # uses mean and standard deviation to determine the value
     imputation_method='gaussian',
-    
     # value at right tail of distribution
     tail='right',
-    
     # multiply the std by 3
     fold=3,
-    
     # the variables to impute
     variables=['LotFrontage', 'MasVnrArea'],
 )
 
 
 # find the imputation values
-
 imputer.fit(X_train)
 
 
 # The values for the imputation
-
 imputer.imputer_dict_
 
 
@@ -109,19 +113,15 @@ imputer.imputer_dict_
 
 
 # impute the data
-
 train_t = imputer.transform(X_train)
 test_t = imputer.transform(X_test)
 
 
 # check we no longer have NA
-
 train_t['LotFrontage'].isnull().sum()
 
 
-# The variable distribution changed slightly with
-# more values accumulating towards the right tail
-
+# The variable distribution changed slightly with more values accumulating towards the right tail
 fig = plt.figure()
 ax = fig.add_subplot(111)
 X_train['LotFrontage'].plot(kind='kde', ax=ax)

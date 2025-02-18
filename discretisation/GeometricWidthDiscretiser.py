@@ -8,13 +8,32 @@ from sklearn.model_selection import train_test_split
 from feature_engine.discretisation import GeometricWidthDiscretiser
 
 
-# Load dataset
-data = pd.read_csv('houseprice.csv')
+data = pd.read_csv('../data/housing.csv')   # ~ rename from train.csv
+# data.head()
 
-# Separate into train and test sets
-X_train, X_test, y_train, y_test =  train_test_split(
-        data.drop(['Id', 'SalePrice'], axis=1),
-        data['SalePrice'], test_size=0.3, random_state=0)
+# # let's separate into training and testing set
+# X = data.drop(["Id", "SalePrice"], axis=1)
+# y = data.SalePrice
+
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+# print("X_train :", X_train.shape)   # (1022, 79)
+# print("X_test :", X_test.shape)     # (438, 79)
+
+
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
 
 
 # set up the discretisation transformer

@@ -33,9 +33,9 @@ from feature_engine.outliers import Winsorizer
 
 # Load titanic dataset from OpenML
 
-def load_titanic():
-    data = pd.read_csv(
-        'https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+def load_titanic(filepath='../data/titanic.csv'):
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
     data['pclass'] = data['pclass'].astype('O')
@@ -48,12 +48,10 @@ def load_titanic():
     return data
 
 # To plot histogram of given numerical feature
-
-
 def plot_hist(data, col):
     plt.figure(figsize=(8, 5))
     plt.hist(data[col], bins=30)
-    plt.title("Distribution of "+col)
+    plt.title("Distribution of " + col)
     return plt.show()
 
 
