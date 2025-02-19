@@ -1,0 +1,76 @@
+[Project DNA]
+library = "feature-engine>=1.6.0"
+context = "documentation-preservation"
+primary_artifacts = {notebooks: "raw examples", python_scripts: "canonical implementations"}
+
+[Code Lens]
+focus_patterns = [
+    "from feature_engine\.(creation|discretisation|encoding) import \w+",
+    "fit_transform\(X_train\)",
+    "set_config\(.*\)",
+    "Pipeline\(.*FeatureEngine.*\)"
+]
+
+[Notebook Digestion]
+cell_priority = [
+    "!pip install feature-engine",       # First
+    "import feature_engine.*",           # Second 
+    "X = pd.read_.*",                    # Third
+    "transformer = \w+\(.*\)",           # Fourth
+    "transformer.fit\(.*\)",             # Fifth
+    "X_t = transformer.transform\(.*\)", # Sixth
+    "print\(X_t\.head\(\)\)",            # Last
+]
+
+[Conversion Protocol]
+transform_steps = [
+    "1. Extract all code blocks containing feature-engine imports",
+    "2. Preserve dataset loading logic (find raw data paths)",
+    "3. Isolate transformer configuration patterns",
+    "4. Capture fit/transform execution flow",
+    "5. Convert matplotlib outputs to plotly-orca static exports",
+    "6. Generate pytest-parameterized test cases from notebook outputs"
+]
+
+[Validation Matrix]
+compatibility_checks = {
+    "deprecation_scan": [
+        "from feature_engine\.variable_handlers import \w+",
+        "return_numeric=True"
+    ],
+    "modernization_targets": [
+        "set_output(transform='pandas')",
+        "config_context(.*)"
+    ]
+}
+
+[Token Economy]
+compression_strategy = [
+    "Cluster similar transformers into template-driven batches",
+    "Generate abstract base test classes per category",
+    "Create feature-engine import manifest for shared dependencies",
+    "Implement fractal documentation pattern (each script documents its sibling notebooks)"
+]
+
+[Autonomous Workflow]
+execution_graph = """
+1. Ingest all notebooks into categorical memory slots
+2. Generate conversion priority based on:
+   - Frequency of transformer usage in ML papers
+   - Completeness of example (marked 'wanted' = high priority)
+3. For each category (creation, encoding, etc.):
+   a. Create base test harness
+   b. Generate parameterized test data
+   c. Produce canonical implementation script
+   d. Cross-link with original notebooks
+4. Output structure:
+   feature-engine-tutorials/
+   ├── canonical/
+   │   ├── creation_features.py
+   │   ├── discretisation_pipeline.py
+   │   └── ... 
+   ├── test_suite/
+   │   ├── test_creation_features.py
+   │   └── ...
+   └── conversion_manifest.json
+"""
