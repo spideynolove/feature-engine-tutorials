@@ -1,15 +1,6 @@
 # Jupyter notebooks with Demos of Feature-engine's functionality
 
-## External Command
-
-```bash
-nbconverter "/home/hung/Documents/LEARN/spideynolove/feature-engine-tutorials/discretisation/"
-```
-
 ![PythonVersion](https://img.shields.io/badge/python-3.6%20|3.7%20|%203.8%20|%203.9-success)
-[![License https://github.com/feature-engine/feature_engine/blob/master/LICENSE.md](https://img.shields.io/badge/license-BSD-success.svg)](https://github.com/feature-engine/feature-engine-examples/blob/master/LICENSE.md)
-[![Sponsorship https://www.trainindata.com/](https://img.shields.io/badge/Powered%20By-TrainInData-orange.svg)](https://www.trainindata.com/)
-
 
 Feature-engine is a Python library with multiple transformers to engineer and select features for use in machine learning models. 
 Feature-engine's transformers follow scikit-learn's functionality with fit() and transform() methods to first learn the 
@@ -79,26 +70,9 @@ In this repo, you will find a lot of examples on how to use Feature-engine's tra
 ## selection
  * notebooks wanted, please contribute
 
-
-
 # Contributing
 
 We welcome notebooks from users of the package. If you want to create one of the missing notebooks, or want to add a notebook of your own, provided that the data set is free to share, make a pull request with the code.
-
-How to contribute:
-
-### Local Setup Steps
-- Fork the repo
-- Clone your fork into your local computer: ``git clone https://github.com/<YOURUSERNAME>/feature-engine-examples.git``
-- cd into the repo ``cd feature-engine-examples``
-- If you haven't done so yet, install feature-engine ``pip install feature_engine``
-- Create a feature branch with a meaningful name for your notebook: ``git checkout -b mynotebookbranch``
-- Develop your notebook
-- Add the changes to your copy of the fork: ``git add .``, ``git commit -m "a meaningful commit message"``, ``git pull origin mynotebookbranch:mynotebookbranch``
-- Go to your fork on Github and make a PR to this repo
-- Done
-
-Thank you!!
 
 ## Feature-engine features in the following resources:
 
@@ -119,6 +93,27 @@ Thank you!!
 
 * [Documentation](http://feature-engine.trainindata.com)
 
-## En Español:
+## References
 
-* [Ingeniería de variables, MachinLenin, charla online](https://www.youtube.com/watch?v=NhCxOOoFXds)
+```
+Time series
+
+    https://github.com/fraunhoferportugal/tsfel
+
+    https://github.com/blue-yonder/tsfresh
+
+    https://github.com/winedarksea/AutoTS
+
+    https://github.com/functime-org/functime
+
+ML:
+    https://github.com/sberbank-ai-lab/LightAutoML
+
+    https://github.com/EpistasisLab/tpot
+
+    https://github.com/NVIDIA-Merlin/NVTabular
+
+    https://github.com/asavinov/intelligent-trading-bot
+
+    https://github.com/alteryx/featuretools
+```
