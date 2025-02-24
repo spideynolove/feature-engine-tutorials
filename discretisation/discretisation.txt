@@ -1,0 +1,1612 @@
+// EqualWidthDiscretiser.py
+// EqualWidthDiscretiser.py
+# Generated from: EqualWidthDiscretiser.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # EqualWidthDiscretiser
+#
+# The EqualWidthDiscretiser() divides continuous numerical variables into
+# intervals of the same width, that is, equidistant intervals. Note that the
+# proportion of observations per interval may vary.
+#
+# The number of intervals
+# in which the variable should be divided must be indicated by the user.
+#
+# **Note**
+#
+# For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:
+#
+# Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
+# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3
+#
+# http://jse.amstat.org/v19n3/decock.pdf
+#
+# https://www.tandfonline.com/doi/abs/10.1080/10691898.2011.11889627
+#
+# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+
+from feature_engine.discretisation import EqualWidthDiscretiser
+
+plt.rcParams["figure.figsize"] = [15,5]
+
+
+# data = pd.read_csv('../data/housing.csv')
+# data.head()
+
+# # let's separate into training and testing set
+# X = data.drop(["Id", "SalePrice"], axis=1)
+# y = data.SalePrice
+
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+# print("X_train :", X_train.shape)
+# print("X_test :", X_test.shape)
+
+
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
+
+
+# we will discretise two continuous variables
+
+X_train[["LotArea", 'GrLivArea']].hist(bins=50)
+plt.show()
+
+
+# The EqualWidthDiscretiser() works only with numerical variables.
+# A list of variables can be passed as argument. Alternatively, the discretiser
+# will automatically select all numerical variables.
+#
+# The EqualWidthDiscretiser() first finds the boundaries for the intervals for
+# each variable, fit.
+#
+# Then, it transforms the variables, that is, sorts the values into the intervals,
+# transform.
+
+
+'''
+Parameters
+----------
+
+bins : int, default=10
+    Desired number of equal width intervals / bins.
+
+variables : list
+    The list of numerical variables to transform. If None, the
+    discretiser will automatically select all numerical type variables.
+
+return_object : bool, default=False
+    Whether the numbers in the discrete variable should be returned as
+    numeric or as object. The decision should be made by the user based on
+    whether they would like to proceed the engineering of the variable as
+    if it was numerical or categorical.
+
+return_boundaries: bool, default=False
+    whether the output should be the interval boundaries. If True, it returns
+    the interval boundaries. If False, it returns integers.
+'''
+
+ewd = EqualWidthDiscretiser(bins=10, variables=['LotArea', 'GrLivArea'])
+
+ewd.fit(X_train)
+
+
+# binner_dict contains the boundaries of the different bins
+ewd.binner_dict_
+
+
+train_t = ewd.transform(X_train)
+test_t = ewd.transform(X_test)
+
+
+# the below are the bins into which the observations were sorted
+train_t['GrLivArea'].unique()
+
+
+# here I put side by side the original variable and the transformed variable
+tmp = pd.concat([X_train[["LotArea", 'GrLivArea']],
+                 train_t[["LotArea", 'GrLivArea']]], axis=1)
+
+tmp.columns = ["LotArea", 'GrLivArea', "LotArea_binned", 'GrLivArea_binned']
+
+tmp.head()
+
+
+# Note that the bins are not equally distributed
+plt.subplot(1, 2, 1)
+tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per interval')
+
+plt.subplot(1, 2, 2)
+tmp.groupby('LotArea_binned')['LotArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per interval')
+
+plt.show()
+
+
+# ### Now return interval boundaries instead
+
+
+ewd = EqualWidthDiscretiser(
+    bins=10, variables=['LotArea', 'GrLivArea'], return_boundaries=True)
+
+ewd.fit(X_train)
+
+
+train_t = ewd.transform(X_train)
+test_t = ewd.transform(X_test)
+
+
+# the numbers are the different bins into which the observations
+# were sorted
+np.sort(np.ravel(train_t['GrLivArea'].unique()))
+
+
+np.sort(np.ravel(test_t['GrLivArea'].unique()))
+
+
+#the intervals are more or less of the same length
+val = np.sort(np.ravel(train_t['GrLivArea'].unique()))
+val
+
+
+import re
+
+# Extract the upper bounds (except for the last interval which has 'inf')
+def extract_upper_bound(interval_str):
+    # Extract the number before ']'
+    match = re.search(r'([0-9.]+)\]$', interval_str)
+    if match:
+        return float(match.group(1))
+    return None
+
+upper_bounds = [extract_upper_bound(x) for x in val if extract_upper_bound(x) is not None]
+upper_bounds.sort()
+
+differences = np.diff(upper_bounds)
+print(differences)
+
+
+def extract_bounds(interval_str):
+    # Extract numbers from the interval string
+    numbers = re.findall(r'[-+]?\d*\.\d+|\d+', interval_str)
+    if len(numbers) == 2:
+        return float(numbers[0]), float(numbers[1])
+    return None
+
+# Get the bounds and sort by upper bound
+bounds = [extract_bounds(x) for x in val if extract_bounds(x) is not None]
+bounds.sort(key=lambda x: x[1])  # sort by upper bound
+
+# Calculate interval sizes
+interval_sizes = [bounds[i][1] - bounds[i][0] for i in range(len(bounds))]
+print(interval_sizes)
+
+
+
+// ---------------------------------------------------
+
+// ArbitraryDiscretiser_plus_MeanEncoder.py
+// ArbitraryDiscretiser_plus_MeanEncoder.py
+# Generated from: ArbitraryDiscretiser_plus_MeanEncoder.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # ArbitraryDiscretiser + MeanEncoder
+#
+# This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
+
+
+# ## ArbitraryDiscretiser
+#
+# The ArbitraryDiscretiser() divides continuous numerical variables into contiguous intervals arbitrarily defined by the user.
+#
+# The user needs to enter a dictionary with variable names as keys, and a list of the limits of the intervals as values. For example {'var1': [0, 10, 100, 1000],'var2': [5, 10, 15, 20]}.
+#
+# <b>Note:</b> Check out the ArbitraryDiscretiser notebook to learn more about this transformer.
+
+
+# ## MeanEncoder
+#
+# The MeanEncoder() replaces the labels of the variables by the mean value of the target for that label. <br>For example, in the variable colour, if the mean value of the binary target is 0.5 for the label blue, then blue is replaced by 0.5
+#
+# <b>Note:</b> Read MeanEncoder notebook to know more about this transformer
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+
+from feature_engine.discretisation import ArbitraryDiscretiser
+from feature_engine.encoding import MeanEncoder
+
+plt.rcParams["figure.figsize"] = [15,5]
+
+
+# Load titanic dataset from OpenML
+
+def load_titanic(filepath='titanic.csv'):
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+# data = load_titanic("../data/titanic.csv")
+data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data.head()
+
+
+# let's separate into training and testing set
+X = data.drop(['survived'], axis=1)
+y = data.survived
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=0)
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
+
+
+# we will transform two continuous variables
+X_train[["age", 'fare']].hist(bins=30)
+plt.show()
+
+
+# set up the discretiser
+arb_disc = ArbitraryDiscretiser(
+    binning_dict={'age': [0, 18, 30, 50, 100],
+                  'fare': [-1, 20, 40, 60, 80, 600]},
+    # returns values as categorical
+    return_object=True)
+
+# set up the mean encoder
+mean_enc = MeanEncoder(variables=['age', 'fare'])
+
+# set up the pipeline
+transformer = Pipeline(steps=[('ArbitraryDiscretiser', arb_disc),
+                              ('MeanEncoder', mean_enc),
+                              ])
+# train the pipeline
+transformer.fit(X_train, y_train)
+
+
+transformer.named_steps['ArbitraryDiscretiser'].binner_dict_
+
+
+transformer.named_steps['MeanEncoder'].encoder_dict_
+
+
+train_t = transformer.transform(X_train)
+test_t = transformer.transform(X_test)
+
+test_t.head()
+
+
+# let's explore the monotonic relationship
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby("fare")["survived"].mean().plot()
+plt.title("Relationship between fare and target")
+plt.xlabel("fare")
+plt.ylabel("Mean of target")
+plt.show()
+
+
+# We can observe an almost linear relationship between the variable "fare" after the transformation and the target.
+
+
+
+// ---------------------------------------------------
+
+// GeometricWidthDiscretiser_plus_MeanEncoder.py
+// GeometricWidthDiscretiser_plus_MeanEncoder.py
+# Generated from: GeometricWidthDiscretiser_plus_MeanEncoder.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # GeometricWidthDiscretiser + MeanEncoder
+#
+# This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
+
+
+# ## GeometricWidthDiscretiser
+#
+# The GeometricWidthDiscretiser() divides continuous numerical variables into
+# intervals of increasing width with equal increments. Note that the
+# proportion of observations per interval may vary.
+#
+# The size of the interval will follow geometric progression.
+
+
+# ## MeanEncoder
+#
+# This encoder replaces the labels by the target mean.
+#
+# <b>Note:</b> Check out the MeanEncoder notebook to learn more about this transformer.
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+
+from feature_engine.discretisation import GeometricWidthDiscretiser
+from feature_engine.encoding import MeanEncoder
+
+plt.rcParams["figure.figsize"] = [15,5]
+
+
+# Load titanic dataset from OpenML
+
+def load_titanic(filepath='titanic.csv'):
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+# data = load_titanic("../data/titanic.csv")
+data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data.head()
+
+
+# let's separate into training and testing set
+X = data.drop(['survived'], axis=1)
+y = data.survived
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+print("X_train :" ,X_train.shape)
+print("X_test :" ,X_test.shape)
+
+
+# we will use two continuous variables for the transformations
+X_train[["age", 'fare']].hist(bins=30)
+plt.show()
+
+
+# set up the discretiser
+
+efd = GeometricWidthDiscretiser(
+    bins=5,
+    variables=['age', 'fare'],
+    # important: return values as categorical
+    return_object=True)
+
+# set up the encoder
+woe = MeanEncoder(variables=['age', 'fare'])
+
+# pipeline
+transformer = Pipeline(
+    steps=[
+        ('GeometricWidthDiscretiser', efd),
+        ('MeanEncoder', woe),
+    ]
+)
+
+transformer.fit(X_train, y_train)
+
+
+transformer.named_steps['GeometricWidthDiscretiser'].binner_dict_
+
+
+transformer.named_steps['MeanEncoder'].encoder_dict_
+
+
+train_t = transformer.transform(X_train)
+test_t = transformer.transform(X_test)
+
+test_t.head()
+
+
+# let's explore the monotonic relationship
+plt.figure(figsize=(7,5))
+pd.concat([test_t,y_test], axis=1).groupby("fare")["survived"].mean().plot()
+plt.title("Relationship between fare and target")
+plt.xlabel("fare")
+plt.ylabel("Mean of target")
+plt.show()
+
+
+
+// ---------------------------------------------------
+
+// Model_Score_Discretisation.py
+// Model_Score_Discretisation.py
+# Generated from: Model_Score_Discretisation.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+
+
+# # Loading the Dataset
+
+
+X, y = load_breast_cancer(return_X_y=True, as_frame=True)
+X.head(3)
+
+
+np.unique(y)
+
+
+X.groupby(y).size()
+
+
+# # Model Probability Discretization
+#
+# When we want to build a model to rank, we would like to know if the mean of our target variable increases with the model predicted probability. In order to check that, it is common to discretise the model probabilities that is provided by `model.predict_proba(X)[:, 1]`. If the mean target increases monotonically with each bin boundaries, than we can rest assure that our model is doing some sort of ranking.
+
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.60, random_state=50)
+
+
+from sklearn.preprocessing import MinMaxScaler
+from feature_engine.wrappers import SklearnTransformerWrapper
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+
+features = X.columns.tolist()
+
+lr_model = Pipeline(steps=[
+    ('scaler', SklearnTransformerWrapper(transformer=MinMaxScaler(), variables=features)),
+    ('algorithm', LogisticRegression())
+])
+
+
+lr_model.fit(X_train, y_train)
+
+y_proba_train = lr_model.predict_proba(X_train)[:,1]
+y_proba_test = lr_model.predict_proba(X_test)[:,1]
+
+
+from sklearn.metrics import roc_auc_score
+
+print(f"Train ROCAUC: {roc_auc_score(y_train, y_proba_train):.4f}")
+print(f"Test ROCAUC: {roc_auc_score(y_test, y_proba_test):.4f}")
+
+
+# Our model is performing very good! But let's check if it is in fact assigning the examples with the greatest chance to acquire breast cancer with higher probabilities.
+#
+# To do that, let's use the `EqualFrequencyDiscretiser`.
+#
+# First, let's build a dataframe with the predicted probabilities and the target.
+
+
+predictions_df = pd.DataFrame({'model_prob': y_proba_test,'target': y_test})
+predictions_df.head()
+
+
+from feature_engine.discretisation import EqualFrequencyDiscretiser
+
+disc = EqualFrequencyDiscretiser(q=4, variables=['model_prob'], return_boundaries=True)
+predictions_df_t = disc.fit_transform(predictions_df)
+predictions_df_t.groupby('model_prob')['target'].mean().plot(kind='bar', rot=45);
+
+
+# Indeed our model is ranking! But the last two groups/bins with greater probabilities are really close to each other. So, maybe after all we just have 3 groups instead of 4. Wouldn't it be nice if we could use a method that finds the optimum number of groups/bins for us? For this, `feature-engine` gotcha you! Let's use the `DecisionTreeDiscretiser`. As said by Soledad Gali [here](https://trainindata.medium.com/variable-discretization-in-machine-learning-7b09009915c2), this discretisation technique consists of using a decision tree to identify the optimal partitions for a continuous variable, that is what our model probability is.
+
+
+from feature_engine.discretisation import DecisionTreeDiscretiser
+
+disc = DecisionTreeDiscretiser(cv=3, scoring='roc_auc', variables=['model_prob'], regression=False)
+
+predictions_df_t = disc.fit_transform(predictions_df, y_test)
+
+predictions_df_t.groupby('model_prob')['target'].mean().plot(kind='bar');
+
+
+# Very nice! Our `DecisionTreeDiscretiser` have found three optimum bins/groups/clusters to split the model probability. The first group only contains examples that our model says won't develop breast cancer. The second one has a 0.625 probability chance of develop a breast cancer and the third cluster has the greatest chance of develop breast cancer, 0.978.
+#
+# Let' check the size of each cluster:
+
+
+predictions_df_t['model_prob'].value_counts().sort_index()
+
+
+# It's a common practice to give letters to each cluster in a way that the letter 'A' for example will be used to denote the cluster with less probability:
+
+
+import string
+
+tree_predictions = np.sort(predictions_df_t['model_prob'].unique())
+
+ratings_map = {tree_prediction: rating for rating, tree_prediction in zip(string.ascii_uppercase, tree_predictions)}
+ratings_map
+
+
+predictions_df_t['cluster'] = predictions_df_t['model_prob'].map(ratings_map)
+predictions_df_t.head()
+
+
+predictions_df_t.groupby('cluster')['target'].mean().plot(kind='bar', rot=0, title="Mean Target by Cluster");
+
+
+# The same figure as the one above, but now with letters to denote each cluster.
+#
+# To finish, let's see what are the boundaries of each cluster. With that information, once we apply the model to obtain the probability of develop breast cancer for a new sample, we can classify it into one of the three cluster we created with the `DecisionTreeDiscretiser`.
+
+
+predictions_df_t['model_probability'] = predictions_df['model_prob']
+predictions_df_t.head()
+
+
+predictions_df_t.groupby('cluster').agg(lower_boundary = ('model_probability', 'min'), upper_boundary=('model_probability', 'max')).round(3)
+
+
+# So, if a new sample gets a probability of 0.72 it will be assigned to cluster C.
+
+
+# # References
+#
+# To learn more about variable discretization tecniques, please go to https://trainindata.medium.com/variable-discretization-in-machine-learning-7b09009915c2.
+
+
+
+// ---------------------------------------------------
+
+// ArbitraryDiscretiser.py
+// ArbitraryDiscretiser.py
+# Generated from: ArbitraryDiscretiser.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # ArbitraryDiscretiser
+#
+# The ArbitraryDiscretiser() divides continuous numerical variables into contiguous intervals are arbitrarily entered by the user.
+#
+# The user needs to enter a dictionary with variable names as keys, and a list of the limits of the intervals as values. For example {'var1': [0, 10, 100, 1000], 'var2': [5, 10, 15, 20]}.
+#
+# **Note**
+#
+# For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:
+#
+# Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
+# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3
+#
+# http://jse.amstat.org/v19n3/decock.pdf
+#
+# https://www.tandfonline.com/doi/abs/10.1080/10691898.2011.11889627
+#
+# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+
+from feature_engine.discretisation import ArbitraryDiscretiser
+plt.rcParams["figure.figsize"] = [15,5]
+
+
+# data = pd.read_csv('../data/housing.csv')   # ~ rename from train.csv
+# data.head()
+
+# # let's separate into training and testing set
+# X = data.drop(["Id", "SalePrice"], axis=1)
+# y = data.SalePrice
+
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+# print("X_train :", X_train.shape)   # (1022, 79)
+# print("X_test :", X_test.shape)     # (438, 79)
+
+
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
+
+
+# we will discretise two continuous variables
+
+X_train[["LotArea", 'GrLivArea']].hist(bins=50)
+plt.show()
+
+
+# The ArbitraryDiscretiser() works only with numerical variables. The discretiser will
+# check if the dictionary entered by the user contains variables present in the
+# training set, and if these variables are cast as numerical, before doing any
+# transformation.
+#
+# Then it transforms the variables, that is, it sorts the values into the intervals,
+# transform.
+
+
+'''
+Parameters
+----------
+
+binning_dict : dict
+    The dictionary with the variable : interval limits pairs, provided by the user.
+    A valid dictionary looks like this:
+
+     binning_dict = {'var1':[0, 10, 100, 1000], 'var2':[5, 10, 15, 20]}.
+
+return_object : bool, default=False
+    Whether the numbers in the discrete variable should be returned as
+    numeric or as object. The decision is made by the user based on
+    whether they would like to proceed the engineering of the variable as
+    if it was numerical or categorical.
+
+return_boundaries: bool, default=False
+    whether the output should be the interval boundaries. If True, it returns
+    the interval boundaries. If False, it returns integers.
+'''
+
+atd = ArbitraryDiscretiser(binning_dict={"LotArea":[-np.inf,4000,8000,12000,16000,20000,np.inf],
+                                        "GrLivArea":[-np.inf,500,1000,1500,2000,2500,np.inf]})
+
+atd.fit(X_train)
+
+
+# binner_dict contains the boundaries of the different bins
+atd.binner_dict_
+
+
+train_t = atd.transform(X_train)
+test_t = atd.transform(X_test)
+
+
+# the below are the bins into which the observations were sorted
+print(train_t['GrLivArea'].unique())
+print(train_t['LotArea'].unique())
+
+
+# here I put side by side the original variable and the transformed variable
+tmp = pd.concat([X_train[["LotArea", 'GrLivArea']], train_t[["LotArea", 'GrLivArea']]], axis=1)
+tmp.columns = ["LotArea", 'GrLivArea',"LotArea_binned", 'GrLivArea_binned']
+tmp.head()
+
+
+plt.subplot(1,2,1)
+tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per bin')
+plt.subplot(1,2,2)
+tmp.groupby('LotArea_binned')['LotArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per bin')
+
+plt.show()
+
+
+# ### Now return interval boundaries instead
+
+
+atd = ArbitraryDiscretiser(binning_dict={"LotArea": [-np.inf, 4000, 8000, 12000, 16000, 20000, np.inf],
+                                         "GrLivArea": [-np.inf, 500, 1000, 1500, 2000, 2500, np.inf]},
+                           # to return the boundary limits
+                           return_boundaries=True)
+
+atd.fit(X_train)
+
+
+train_t = atd.transform(X_train)
+test_t = atd.transform(X_test)
+
+
+# the numbers are the different bins into which the observations
+# were sorted
+np.sort(np.ravel(train_t['GrLivArea'].unique()))
+
+
+np.sort(np.ravel(test_t['GrLivArea'].unique()))
+
+
+# bar plot to show the intervals returned by the transformer
+test_t.LotArea.value_counts(sort=False).plot.bar(figsize=(6,4))
+plt.ylabel('Number of houses')
+plt.title('Number of houses per interval')
+plt.show()
+
+
+
+// ---------------------------------------------------
+
+// DecisionTreeDiscretiser.py
+// DecisionTreeDiscretiser.py
+# Generated from: DecisionTreeDiscretiser.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # DecisionTreeDiscretiser
+#
+# The DecisionTreeDiscretiser() divides continuous numerical variables into discrete, finite, values estimated by a decision tree.
+#
+# The methods is inspired by the following article from the winners of the KDD 2009 competition:
+# http://www.mtome.com/Publications/CiML/CiML-v3-book.pdf
+#
+# **Note**
+#
+# For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:
+#
+# Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
+# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3
+#
+# http://jse.amstat.org/v19n3/decock.pdf
+#
+# https://www.tandfonline.com/doi/abs/10.1080/10691898.2011.11889627
+#
+# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+
+from feature_engine.discretisation import DecisionTreeDiscretiser
+
+plt.rcParams["figure.figsize"] = [15,5]
+
+
+# ## DecisionTreeDiscretiser with Regression
+
+
+# data = pd.read_csv('../data/housing.csv')
+# data.head()
+
+# # let's separate into training and testing set
+# X = data.drop(["Id", "SalePrice"], axis=1)
+# y = data.SalePrice
+
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+# print("X_train :", X_train.shape)
+# print("X_test :", X_test.shape)
+
+
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
+
+
+# we will discretise two continuous variables
+
+X_train[["LotArea", 'GrLivArea']].hist(bins=50)
+plt.show()
+
+
+# The DecisionTreeDiscretiser() works only with numerical variables.
+# A list of variables can be passed as an argument. Alternatively, the
+# discretiser will automatically select and transform all numerical variables.
+#
+# The DecisionTreeDiscretiser() first trains a decision tree for each variable,
+# fit.
+#
+# The DecisionTreeDiscretiser() then transforms the variables, that is,
+# makes predictions based on the variable values, using the trained decision
+# tree, transform.
+
+
+'''
+Parameters
+----------
+
+cv : int, default=3
+    Desired number of cross-validation fold to be used to fit the decision
+    tree.
+
+scoring: str, default='neg_mean_squared_error'
+    Desired metric to optimise the performance for the tree. Comes from
+    sklearn metrics. See DecisionTreeRegressor or DecisionTreeClassifier
+    model evaluation documentation for more options:
+    https://scikit-learn.org/stable/modules/model_evaluation.html
+
+variables : list
+    The list of numerical variables that will be transformed. If None, the
+    discretiser will automatically select all numerical type variables.
+
+regression : boolean, default=True
+    Indicates whether the discretiser should train a regression or a classification
+    decision tree.
+
+param_grid : dictionary, default=None
+    The list of parameters over which the decision tree should be optimised
+    during the grid search. The param_grid can contain any of the permitted
+    parameters for Scikit-learn's DecisionTreeRegressor() or
+    DecisionTreeClassifier().
+
+    If None, then param_grid = {'max_depth': [1, 2, 3, 4]}
+
+random_state : int, default=None
+    The random_state to initialise the training of the decision tree. It is one
+    of the parameters of the Scikit-learn's DecisionTreeRegressor() or
+    DecisionTreeClassifier(). For reproducibility it is recommended to set
+    the random_state to an integer.
+'''
+
+treeDisc = DecisionTreeDiscretiser(cv=3,
+                                   scoring='neg_mean_squared_error',
+                                   variables=['LotArea', 'GrLivArea'],
+                                   regression=True,
+                                   random_state=29)
+
+# the DecisionTreeDiscretiser needs the target for fitting
+treeDisc.fit(X_train, y_train)
+
+
+# the binner_dict_ contains the best decision tree for each variable
+treeDisc.binner_dict_
+
+
+train_t = treeDisc.transform(X_train)
+test_t = treeDisc.transform(X_test)
+
+
+# the below account for the best obtained bins, aka, the tree predictions
+
+train_t['GrLivArea'].unique()
+
+
+# the below account for the best obtained bins, aka, the tree predictions
+
+train_t['LotArea'].unique()
+
+
+# here I put side by side the original variable and the transformed variable
+
+tmp = pd.concat([X_train[["LotArea", 'GrLivArea']],
+                 train_t[["LotArea", 'GrLivArea']]], axis=1)
+
+tmp.columns = ["LotArea", 'GrLivArea', "LotArea_binned", 'GrLivArea_binned']
+
+tmp.head()
+
+
+# in  equal frequency discretisation, we obtain the same amount of observations
+# in each one of the bins.
+
+plt.subplot(1,2,1)
+tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of houses per discrete value')
+
+plt.subplot(1,2,2)
+tmp.groupby('LotArea_binned')['LotArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.ylabel('Number of houses')
+
+plt.show()
+
+
+# ## DecisionTreeDiscretiser with binary classification
+
+
+# Load titanic dataset from OpenML
+
+def load_titanic(filepath='titanic.csv'):
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+# data = load_titanic("../data/titanic.csv")
+data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data.head()
+
+
+# let's separate into training and testing set
+
+X_train, X_test, y_train, y_test = train_test_split(data.drop(['survived'], axis=1),
+                                                    data['survived'],
+                                                    test_size=0.3, 
+                                                    random_state=0)
+
+print(X_train.shape)
+print(X_test.shape)
+
+
+#this discretiser transforms the numerical variables
+X_train[['fare', 'age']].dtypes
+
+
+treeDisc = DecisionTreeDiscretiser(cv=3,
+                                   scoring='roc_auc',
+                                   variables=['fare', 'age'],
+                                   regression=False,
+                                   param_grid={'max_depth': [1, 2]},
+                                   random_state=29,
+                                   )
+
+treeDisc.fit(X_train, y_train)
+
+
+treeDisc.binner_dict_
+
+
+train_t = treeDisc.transform(X_train)
+test_t = treeDisc.transform(X_test)
+
+
+# the below account for the best obtained bins
+# in this case, the tree has found that dividing the data in 6 bins is enough
+train_t['age'].unique()
+
+
+# the below account for the best obtained bins
+# in this case, the tree has found that dividing the data in 8 bins is enough
+train_t['fare'].unique()
+
+
+# here I put side by side the original variable and the transformed variable
+
+tmp = pd.concat([X_train[["fare", 'age']], train_t[["fare", 'age']]], axis=1)
+
+tmp.columns = ["fare", 'age', "fare_binned", 'age_binned']
+
+tmp.head()
+
+
+plt.subplot(1,2,1)
+tmp.groupby('fare_binned')['fare'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of houses per discrete value')
+
+plt.subplot(1,2,2)
+tmp.groupby('age_binned')['age'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of houses per discrete value')
+
+plt.show()
+
+
+# The DecisionTreeDiscretiser() returns values which show
+# a monotonic relationship with target
+
+pd.concat([test_t, y_test], axis=1).groupby(
+    'age')['survived'].mean().plot(figsize=(6, 4))
+
+plt.ylabel("Mean of target")
+plt.title("Relationship between fare and target")
+plt.show()
+
+
+# The DecisionTreeDiscretiser() returns values which show
+# a monotonic relationship with target
+
+pd.concat([test_t, y_test], axis=1).groupby(
+    'fare')['survived'].mean().plot(figsize=(6, 4))
+
+plt.ylabel("Mean of target")
+plt.title("Relationship between fare and target")
+plt.show()
+
+
+# ## DecisionTreeDiscretiser for Multi-class classification
+
+
+# Load iris dataset from sklearn
+from sklearn.datasets import load_iris
+
+data = pd.DataFrame(load_iris().data, 
+                    columns=load_iris().feature_names).join(
+    pd.Series(load_iris().target, name='type'))
+
+data.head()
+
+
+data.type.unique() # 3 - class classification
+
+
+# let's separate into training and testing set
+
+X_train, X_test, y_train, y_test = train_test_split(data.drop('type', axis=1),
+                                                    data['type'],
+                                                    test_size=0.3,
+                                                    random_state=0)
+
+print(X_train.shape)
+print(X_test.shape)
+
+
+#selected two numerical variables
+X_train[['sepal length (cm)', 'sepal width (cm)']].dtypes
+
+
+treeDisc = DecisionTreeDiscretiser(cv=3,
+                                   scoring='accuracy',
+                                   variables=[
+                                       'sepal length (cm)', 'sepal width (cm)'],
+                                   regression=False,
+                                   random_state=29,
+                                   )
+
+treeDisc.fit(X_train, y_train)
+
+
+treeDisc.binner_dict_
+
+
+train_t = treeDisc.transform(X_train)
+test_t = treeDisc.transform(X_test)
+
+
+# here I put side by side the original variable and the transformed variable
+tmp = pd.concat([X_train[['sepal length (cm)', 'sepal width (cm)']],
+                 train_t[['sepal length (cm)', 'sepal width (cm)']]], axis=1)
+
+tmp.columns = ['sepal length (cm)', 'sepal width (cm)',
+               'sepalLen_binned', 'sepalWid_binned']
+
+tmp.head()
+
+
+plt.subplot(1, 2, 1)
+tmp.groupby('sepalLen_binned')['sepal length (cm)'].count().plot.bar()
+plt.ylabel('Number of species')
+plt.title('Number of observations per discrete value')
+
+plt.subplot(1, 2, 2)
+tmp.groupby('sepalWid_binned')['sepal width (cm)'].count().plot.bar()
+plt.ylabel('Number of species')
+plt.title('Number of observations per discrete value')
+
+plt.show()
+
+
+
+// ---------------------------------------------------
+
+// GeometricWidthDiscretiser.py
+// GeometricWidthDiscretiser.py
+# Generated from: GeometricWidthDiscretiser.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.discretisation import GeometricWidthDiscretiser
+
+
+data = pd.read_csv('../data/housing.csv')   # ~ rename from train.csv
+# data.head()
+
+# # let's separate into training and testing set
+# X = data.drop(["Id", "SalePrice"], axis=1)
+# y = data.SalePrice
+
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+# print("X_train :", X_train.shape)   # (1022, 79)
+# print("X_test :", X_test.shape)     # (438, 79)
+
+
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
+
+
+# set up the discretisation transformer
+disc = GeometricWidthDiscretiser(bins=10, variables=['LotArea', 'GrLivArea'])
+
+# fit the transformer
+disc.fit(X_train)
+
+
+# transform the data
+train_t= disc.transform(X_train)
+test_t= disc.transform(X_test)
+
+
+disc.binner_dict_
+
+
+fig, ax = plt.subplots(1, 2)
+X_train['LotArea'].hist(ax=ax[0], bins=10);
+train_t['LotArea'].hist(ax=ax[1], bins=10);
+
+
+
+// ---------------------------------------------------
+
+// EqualFrequencyDiscretiser.py
+// EqualFrequencyDiscretiser.py
+# Generated from: EqualFrequencyDiscretiser.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # EqualFrequencyDiscretiser
+#
+# The EqualFrequencyDiscretiser() divides continuous numerical variables
+# into contiguous equal frequency intervals, that is, intervals that contain
+# approximately the same proportion of observations.
+#
+# The interval limits are determined by the quantiles. The number of intervals,
+# i.e., the number of quantiles in which the variable should be divided is
+# determined by the user.
+#
+# **Note**
+#
+# For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:
+#
+# Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
+# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3
+#
+# http://jse.amstat.org/v19n3/decock.pdf
+#
+# https://www.tandfonline.com/doi/abs/10.1080/10691898.2011.11889627
+#
+# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+
+from feature_engine.discretisation import EqualFrequencyDiscretiser
+
+plt.rcParams["figure.figsize"] = [15,5]
+
+
+# data = pd.read_csv('../data/housing.csv')
+# data.head()
+
+# # let's separate into training and testing set
+# X = data.drop(["Id", "SalePrice"], axis=1)
+# y = data.SalePrice
+
+# X_train, X_test, y_train, y_test = train_test_split(
+#     X, y, test_size=0.3, random_state=0)
+
+# print("X_train :", X_train.shape)
+# print("X_test :", X_test.shape)
+
+
+# Read the separate files
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+
+# Separate features and target in training data
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+
+# For test data, you might not have the target variable
+X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
+
+
+# we will use two continuous variables for transformation
+
+X_train[["LotArea", 'GrLivArea']].hist(bins=50)
+
+plt.show()
+
+
+# The EqualFrequencyDiscretiser() works only with numerical variables.
+# A list of variables can be passed as argument. Alternatively, the discretiser
+# will automatically select and transform all numerical variables.
+#
+# The EqualFrequencyDiscretiser() first finds the boundaries for the intervals or
+# quantiles for each variable, fit.
+#
+# Then it transforms the variables, that is, it sorts the values into the intervals,
+# transform.
+
+
+'''
+Parameters
+----------
+
+q : int, default=10
+    Desired number of equal frequency intervals / bins. In other words the
+    number of quantiles in which the variables should be divided.
+
+variables : list
+    The list of numerical variables that will be discretised. If None, the
+    EqualFrequencyDiscretiser() will select all numerical variables.
+
+return_object : bool, default=False
+    Whether the numbers in the discrete variable should be returned as
+    numeric or as object. The decision is made by the user based on
+    whether they would like to proceed the engineering of the variable as
+    if it was numerical or categorical.
+
+return_boundaries: bool, default=False
+    whether the output should be the interval boundaries. If True, it returns
+    the interval boundaries. If False, it returns integers.
+'''
+
+efd = EqualFrequencyDiscretiser(q=10, variables=['LotArea', 'GrLivArea'])
+
+efd.fit(X_train)
+
+
+# binner_dict contains the boundaries of the different bins
+efd.binner_dict_
+
+
+train_t = efd.transform(X_train)
+test_t = efd.transform(X_test)
+
+
+# the numbers are the different bins into which the observations
+# were sorted
+train_t['GrLivArea'].unique()
+
+
+# the numbers are the different bins into which the observations
+# were sorted
+train_t['LotArea'].unique()
+
+
+# here I put side by side the original variable and the transformed variable
+tmp = pd.concat([X_train[["LotArea", 'GrLivArea']], train_t[["LotArea", 'GrLivArea']]], axis=1)
+tmp.columns = ["LotArea", 'GrLivArea',"LotArea_binned", 'GrLivArea_binned']
+tmp.head()
+
+
+# in  equal frequency discretisation, we obtain the same amount of observations
+# in each one of the bins.
+plt.subplot(1,2,1)
+tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per interval')
+
+plt.subplot(1,2,2)
+tmp.groupby('LotArea_binned')['LotArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per interval')
+
+plt.show()
+
+
+# ### Return interval limits instead
+
+
+# Now, let's return bin boundaries instead
+
+efd = EqualFrequencyDiscretiser(
+    q=10, variables=['LotArea', 'GrLivArea'], return_boundaries=True)
+
+efd.fit(X_train)
+
+
+train_t = efd.transform(X_train)
+test_t = efd.transform(X_test)
+
+
+# the numbers are the different bins into which the observations
+# were sorted
+np.sort(np.ravel(train_t['GrLivArea'].unique()))
+
+
+np.sort(np.ravel(test_t['GrLivArea'].unique()))
+
+
+
+// ---------------------------------------------------
+
+// EqualFrequencyDiscretiser_plus_WoEEncoder.py
+// EqualFrequencyDiscretiser_plus_WoEEncoder.py
+# Generated from: EqualFrequencyDiscretiser_plus_WoEEncoder.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # EqualFrequencyDiscretiser + WoEEncoder
+#
+# This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
+
+
+# ## EqualFrequencyDiscretiser
+#
+# The EqualFrequencyDiscretiser() divides continuous numerical variables
+# into contiguous equal frequency intervals, that is, intervals that contain
+# approximately the same proportion of observations.
+#
+# The interval limits are determined by the quantiles. The number of intervals,
+# i.e., the number of quantiles in which the variable should be divided is
+# determined by the user.
+#
+# <b>Note</b>: Check out the EqualFrequencyDiscretiser notebook to larn more about this transformer.
+
+
+# ## WoEEncoder
+#
+# This encoder replaces the labels by the weight of evidence.
+#
+# **It only works for binary classification.**
+#
+# <b>Note:</b> Check out the WoEEncoder notebook to learn more about this transformer.
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+
+from feature_engine.discretisation import EqualFrequencyDiscretiser
+from feature_engine.encoding import WoEEncoder
+
+plt.rcParams["figure.figsize"] = [15,5]
+
+
+# Load titanic dataset from OpenML
+
+def load_titanic(filepath='titanic.csv'):
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+# data = load_titanic("../data/titanic.csv")
+data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data.head()
+
+
+# let's separate into training and testing set
+X = data.drop(['survived'], axis=1)
+y = data.survived
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+print("X_train :" ,X_train.shape)
+print("X_test :" ,X_test.shape)
+
+
+# we will use two continuous variables for the transformations
+X_train[["age", 'fare']].hist(bins=30)
+plt.show()
+
+
+# set up the discretiser
+
+efd = EqualFrequencyDiscretiser(
+    q=4,
+    variables=['age', 'fare'],
+    # important: return values as categorical
+    return_object=True)
+
+# set up the encoder
+woe = WoEEncoder(variables=['age', 'fare'])
+
+# pipeline
+transformer = Pipeline(steps=[('EqualFrequencyDiscretiser', efd),
+                              ('WoEEncoder', woe),
+                              ])
+
+transformer.fit(X_train, y_train)
+
+
+transformer.named_steps['EqualFrequencyDiscretiser'].binner_dict_
+
+
+transformer.named_steps['WoEEncoder'].encoder_dict_
+
+
+train_t = transformer.transform(X_train)
+test_t = transformer.transform(X_test)
+
+test_t.head()
+
+
+# let's explore the monotonic relationship
+plt.figure(figsize=(7,5))
+pd.concat([test_t,y_test], axis=1).groupby("fare")["survived"].mean().plot()
+plt.title("Relationship between fare and target")
+plt.xlabel("fare")
+plt.ylabel("Mean of target")
+plt.show()
+
+
+
+// ---------------------------------------------------
+
+// EqualWidthDiscretiser_plus_OrdinalEncoder.py
+// EqualWidthDiscretiser_plus_OrdinalEncoder.py
+# Generated from: EqualWidthDiscretiser_plus_OrdinalEncoder.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # EqualWidthDiscretiser + OrdinalEncoder
+#
+#
+# This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
+
+
+# ## EqualWidthDiscretiser
+#
+# The EqualWidthDiscretiser() divides continuous numerical variables into
+# intervals of the same width, that is, equidistant intervals. Note that the
+# proportion of observations per interval may vary.
+#
+# The number of intervals
+# in which the variable should be divided must be indicated by the user.
+#
+# <b>Note:</b> Check out the EqualWidthDiscretiser notebook to learn more about this transformer.
+
+
+# ## OrdinalEncoder
+# The OrdinalEncoder() will replace the variable labels by digits, from 1 to the number of different labels. 
+#
+# If we select "arbitrary", then the encoder will assign numbers as the labels appear in the variable (first come first served).
+#
+# If we select "ordered", the encoder will assign numbers following the mean of the target value for that label. So labels for which the mean of the target is higher will get the number 1, and those where the mean of the target is smallest will get the number n.
+#
+# <b>Note:</b> Check out the OrdinalEncoder notebook to know more about this transformer.
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+
+
+from feature_engine.discretisation import EqualWidthDiscretiser
+from feature_engine.encoding import OrdinalEncoder
+
+plt.rcParams["figure.figsize"] = [15,5]
+
+
+# Load titanic dataset from OpenML
+
+def load_titanic(filepath='titanic.csv'):
+    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+# data = load_titanic("../data/titanic.csv")
+data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data.head()
+
+
+# let's separate into training and testing set
+X = data.drop(['survived'], axis=1)
+y = data.survived
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=0)
+
+print("X_train :", X_train.shape)
+print("X_test :", X_test.shape)
+
+
+# we will use two continuous variables for the transformations
+
+X_train[["age", 'fare']].hist(bins=30)
+plt.show()
+
+
+# set up the discretiser
+ewd = EqualWidthDiscretiser(
+    bins=5,
+    variables=['age', 'fare'],
+    # important: return values as categorical
+    return_object=True)
+
+# set up the encoder
+oe = OrdinalEncoder(variables=['age', 'fare'])
+
+# pipeline
+transformer = Pipeline(steps=[('EqualWidthDiscretiser', ewd),
+                              ('OrdinalEncoder', oe),
+                              ])
+
+transformer.fit(X_train, y_train)
+
+
+transformer.named_steps['EqualWidthDiscretiser'].binner_dict_
+
+
+transformer.named_steps['OrdinalEncoder'].encoder_dict_
+
+
+train_t = transformer.transform(X_train)
+test_t = transformer.transform(X_test)
+
+test_t.head()
+
+
+# let's explore the monotonic relationship
+plt.figure(figsize=(7,5))
+pd.concat([test_t,y_test], axis=1).groupby("fare")["survived"].mean().plot()
+plt.title("Relationship between fare and target")
+plt.xlabel("fare")
+plt.ylabel("Mean of target")
+plt.show()
+
+
+# Note how the bins are monotonically ordered with the target.
+
+
+
+// ---------------------------------------------------
+

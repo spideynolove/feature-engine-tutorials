@@ -1,0 +1,1742 @@
+// Select-by-Single-Feature-Performance.py
+// Select-by-Single-Feature-Performance.py
+# Generated from: Select-by-Single-Feature-Performance.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# ## Univariate Single Performance
+#
+# - Train a ML model per every single feature
+# - Determine the performance of the models
+# - Select features if model performance is above a certain threshold
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.metrics import roc_auc_score, mean_squared_error
+
+from feature_engine.selection import SelectBySingleFeaturePerformance
+
+
+# ## Classification
+
+
+# data.shape
+
+
+data.head()
+
+
+# **Important**
+#
+# In all feature selection procedures, it is good practice to select the features by examining only the training set. And this is to avoid overfit.
+
+
+# separate train and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    data.drop(labels=['target'], axis=1),
+    data['target'],
+    test_size=0.3,
+    random_state=0)
+
+X_train.shape, X_test.shape
+
+
+# set up a machine learning model
+rf = RandomForestClassifier(
+    n_estimators=10, random_state=1, n_jobs=4)
+
+# set up the selector
+sel = SelectBySingleFeaturePerformance(
+    variables=None,
+    estimator=rf,
+    scoring="roc_auc",
+    cv=3,
+    threshold=0.5)
+
+# find predictive features
+sel.fit(X_train, y_train)
+
+
+#  the transformer stores a dictionary of feature:metric pairs
+# in this case is the roc_auc of each individual model
+
+sel.feature_performance_
+
+
+# we can plot feature importance sorted by importance
+
+pd.Series(sel.feature_performance_).sort_values(ascending=False).plot.bar(figsize=(20, 5))
+plt.title('Performance of ML models trained with individual features')
+plt.ylabel('roc-auc')
+
+
+# the features that will be removed
+
+len(sel.features_to_drop_)
+
+
+# remove non-prective features
+
+X_train = sel.transform(X_train)
+X_test = sel.transform(X_test)
+
+X_train.shape, X_test.shape
+
+
+# ## Regression
+#
+# ### with r2 and user specified threshold
+
+
+# load dataset
+
+data = pd.read_csv('../houseprice.csv')
+
+data.shape
+
+
+# I will use only numerical variables
+# select numerical columns:
+
+numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
+numerical_vars = list(data.select_dtypes(include=numerics).columns)
+data = data[numerical_vars]
+data.shape
+
+
+data.head()
+
+
+# fill missing values
+data.fillna(0, inplace=True)
+
+
+# separate train and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    data.drop(labels=['Id','SalePrice'], axis=1),
+    data['SalePrice'],
+    test_size=0.3,
+    random_state=0)
+
+X_train.shape, X_test.shape
+
+
+# set up the machine learning model
+rf = RandomForestRegressor(
+    n_estimators=10, max_depth=2, random_state=1, n_jobs=4)
+
+# set up the selector
+sel = SelectBySingleFeaturePerformance(
+    variables=None,
+    estimator=rf,
+    scoring="r2",
+    cv=3,
+    threshold=0.5)
+
+# find predictive features
+sel.fit(X_train, y_train)
+
+
+# the transformer stores a dictionary of feature:metric pairs
+# notice that the r2 can be positive or negative.
+# the selector selects based on the absolute value
+
+sel.feature_performance_
+
+
+pd.Series(sel.feature_performance_).sort_values(ascending=False).plot.bar(figsize=(20, 5))
+plt.title('Performance of ML models trained with individual features')
+plt.ylabel('r2')
+
+
+# same plot but taking the absolute value of the r2
+
+np.abs(pd.Series(sel.feature_performance_)).sort_values(ascending=False).plot.bar(figsize=(20, 5))
+plt.title('Performance of ML models trained with individual features')
+plt.ylabel('r2 - absolute value')
+
+
+# the features that will be removed
+
+len(sel.features_to_drop_)
+
+
+# select features in the dataframes
+
+X_train = sel.transform(X_train)
+X_test = sel.transform(X_test)
+
+X_train.shape, X_test.shape
+
+
+# ### Automatically select threshold
+#
+# If we leave the threshold to None, the threshold will be automatically specified as the mean of performance of all features.
+
+
+# separate train and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    data.drop(labels=['Id','SalePrice'], axis=1),
+    data['SalePrice'],
+    test_size=0.3,
+    random_state=0)
+
+X_train.shape, X_test.shape
+
+
+# set up the machine learning model
+rf = RandomForestRegressor(
+    n_estimators=10, max_depth=2, random_state=1, n_jobs=4)
+
+# set up the selector
+sel = SelectBySingleFeaturePerformance(
+    variables=None,
+    estimator=rf,
+    scoring="neg_mean_squared_error",
+    cv=3,
+    threshold=None)
+
+# find predictive features
+sel.fit(X_train, y_train)
+
+
+# the transformer stores a dictionary of feature:metric pairs
+# the selector will select those features with neg mean squared error
+# bigger than the mean of the neg squared error of all features
+
+sel.feature_performance_
+
+
+pd.Series(sel.feature_performance_).sort_values(ascending=False).plot.bar(figsize=(20, 5))
+plt.title('Performance of ML models trained with individual features')
+plt.ylabel('Negative mean Squared Error')
+
+
+# the features that will be dropped
+sel.features_to_drop_
+
+
+# note that these features have the biggest negative mean squared error
+pd.Series(sel.feature_performance_)[sel.features_to_drop_].sort_values(ascending=False).plot.bar(figsize=(20, 5))
+
+
+
+// ---------------------------------------------------
+
+// Drop-Constant-and-QuasiConstant-Features.py
+// Drop-Constant-and-QuasiConstant-Features.py
+# Generated from: Drop-Constant-and-QuasiConstant-Features.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+
+// ---------------------------------------------------
+
+// Select-by-MinimumRedundance-MaximumRelevante.py
+// Select-by-MinimumRedundance-MaximumRelevante.py
+# Generated from: Select-by-MinimumRedundance-MaximumRelevante.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# MRMR Feature Selection by Maykon Schots & Matheus Rugollo
+
+
+# <h1> Numerical Feature Selection by MRMR </h1>
+# <hr></hr>
+#
+# Experimenting fast is key to success in Data Science. When experimenting we're going to bump with huge datasets that require special attention when feature selecting and engineering. In a profit driven context, it's important to quickly test the potential value of an idea rather than exploring the best way to use your data or parametrize a machine learning model. It not only takes time that we usually can't afford but also increase financial costs. 
+#
+# Herewit we describe an efficient solution to reduce dimensionality of your dataset, by identifying and creating clusters of redundant features and selecting the most relevant one. This has potential to speed up your experimentation process and reduce costs.</p>
+#
+# <hr></hr>
+# <h5>Case</h5>
+#
+# You might be wondering how this applies to a real use case and why we had to come up with such technique. Hear this story:
+# Consider a project in a financial company that we try to understand how likely a client is to buy a product through Machine Learning. Other then profile features, we usually end up with many financial transactions history features of the clients. With that in mind we can assume that probably many of them are highly correlated, e.g in order to buy something of x value, the client probably received a value > x in the past, and since we're going to extract aggregation features from such events we're going to end up with a lot of correlation between them. 
+#
+#
+# The solution was to come up with an efficient "automatic" way to wipe redundant features from the training set, that can vary from time to time, maintaining our model performance. With this we can always consider at the start of our pipeline all of our "raw" features and select the most relevant of them that are not highly correlated in given moment.
+#
+# Based on a published [article](https://arxiv.org/abs/1908.05376) we developed an implementation using [feature_engine](https://github.com/feature-engine/feature_engine) and [sklearn](https://scikit-learn.org/stable/). Follow the step-by-step to understand our approach.
+
+
+# <h3> Classification Example </h3>
+# <hr>
+#
+# In order to demonstrate, use the [make_classification](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html) helper function from sklearn  to create a set of features making sure that some of them are redundant. Convert both X and y returned by it to be pandas DataFrames for further compatibility with sklearn api.
+
+
+import warnings
+
+import pandas as pd
+from sklearn.datasets import make_classification
+
+warnings.filterwarnings('ignore')
+
+X, y = make_classification(
+    n_samples=5000,
+    n_features=30,
+    n_redundant=15,
+    n_clusters_per_class=1,
+    weights=[0.50],
+    class_sep=2,
+    random_state=42
+)
+
+cols = []
+for i in range(len(X[0])):
+   cols.append(f"feat_{i}")
+X = pd.DataFrame(X, columns=cols)
+y = pd.DataFrame({"y": y})
+
+
+
+X.head()
+
+
+# <h4>Get Redundant Clusters</h4>
+# <hr></hr>
+#
+# Now that we have our master table example set up, we can start by taking advantage of [SmartCorrelatedSelection](https://feature-engine.readthedocs.io/en/1.0.x/selection/SmartCorrelatedSelection.html) implementation by feature_egine. Let's check it's parameters:
+#
+# <h5>Correlation Threshold </h5>
+# This can be a hot topic of discussion for each case, in order to keep as much useful data as possible the correlation threshold set was very conservative .97. 
+# p.s: This demonstration will only have one value set, but a good way of improving this pipeline would be to attempt multiple iterations lowering the threshold, then you could measure performance of given model with different sets of selected features.
+#
+# <h5>Method</h5>
+# The best option here was spearman, identifying both linear and non-linear numerical features correlated clusters to make it less redundant as possible through rank correlation threshold.
+#
+# <h5>Selection Method</h5>
+# This is not relevant for this implementation, because we're not going to use features selected by the SmartCorrelatedSelection. Use variance , it's faster.
+#
+#
+# <hr></hr>
+# <h6>Quick Comment</h6>
+# You might be wondering why we don't just use feature_engine methods, and we definitely considered and tried it, finally it inspired us to come up with some tweaks for our process. It's a very similar idea, but instead of variance we use mutual information to select one feature out of each cluster, it's also the ground work for optimal parametrization and further development of the pipeline for ad hoc usage.
+
+
+from feature_engine.selection import SmartCorrelatedSelection
+
+
+MODEL_TYPE = "classifier" ## Or "regressor"
+CORRELATION_THRESHOLD = .97
+
+# Setup Smart Selector /// Tks feature_engine
+feature_selector = SmartCorrelatedSelection(
+    variables=None,
+    method="spearman",
+    threshold=CORRELATION_THRESHOLD,
+    missing_values="ignore",
+    selection_method="variance",
+    estimator=None,
+)
+
+
+feature_selector.fit_transform(X)
+
+### Setup a list of correlated clusters as lists and a list of uncorrelated features
+correlated_sets = feature_selector.correlated_feature_sets_
+
+correlated_clusters = [list(feature) for feature in correlated_sets]
+
+correlated_features = [feature for features in correlated_clusters for feature in features]
+
+uncorrelated_features = [feature for feature in X if feature not in correlated_features]
+
+
+
+# <h4>Wiping Redundancy considering Relevance</h4>
+#
+# Now we're going to extract the best feature from each correlated cluster using [SelectKBest](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.SelectKBest.html) from sklearn.feature_selection. Here we use [mutual_info_classif](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_classif.html#sklearn.feature_selection.mutual_info_classif) implementation as our score_func for this classifier example, there are other options like mutual_info_regression be sure to select it according to your use case.
+#
+# The relevance of each selected feature is considered when we use mutual info of the samples against the target Y, this will be important so we do not lose any predictive power of our features.
+#
+# <hr></hr>
+#
+# We end up with a set of selected features that considering our correlation threshold of .97, probably will have similar performance. In a context where you want to prioritize reduction of dimensionality, you can check how the selection will perform to make a good decision about it.
+#
+# I don't want to believe, I want to know.
+
+
+from sklearn.feature_selection import (
+    SelectKBest,
+    mutual_info_classif,
+    mutual_info_regression,
+)
+
+
+mutual_info = {
+    "classifier": mutual_info_classif,
+    "regressor": mutual_info_regression,
+}
+
+top_features_cluster = []
+for cluster in correlated_clusters:
+            selector = SelectKBest(score_func=mutual_info[MODEL_TYPE], k=1)  # selects the top feature (k=1) regarding target mutual information
+            selector = selector.fit(X[cluster], y)
+            top_features_cluster.append(
+                list(selector.get_feature_names_out())[0]
+            )
+
+selected_features = top_features_cluster + uncorrelated_features
+
+
+# <h4>Evaluating the set of features</h4>
+#
+# Now that we have our set it's time to decide if we're going with it or not. In this demonstration, the idea was to use a GridSearch to find the best hyperparameters for a RandomForestClassifier providing us with the best possible estimator. 
+#
+# If we attempt to fit many grid searches in a robust way, it would take too long and be very costy. Since we're just experimenting, initally we can use basic cross_validate with the chosen estimator, and we can quickly discard "gone wrong" selections, specially when we lower down our correlation threshold for the clusters.
+#
+# It's an efficient way to approach experimenation with this method, although I highly recommend going for a more robust evaluation with grid searches or other approaches, and a deep discussion on the impact of the performance threshold for your use cause, sometimes 1% can be a lot of $.
+
+
+import os
+import multiprocessing
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import StratifiedKFold, cross_validate
+
+
+cv = StratifiedKFold(shuffle=True, random_state=42)
+
+baseline_raw = cross_validate(
+    RandomForestClassifier(
+        max_samples=1.0,
+        n_jobs=int(os.getenv("N_CORES", 0.50 * multiprocessing.cpu_count())), # simplifica isso aqui pro artigo, bota -1.
+        random_state=42
+    ),
+    X,
+    y,
+    cv=cv,
+    scoring="f1", # or any other metric that you want.
+    groups=None
+)
+
+baseline_selected_features = cross_validate(
+            RandomForestClassifier(),
+            X[selected_features],
+            y,
+            cv=cv,
+            scoring="f1",
+            groups=None,
+            error_score="raise",
+        )
+
+score_raw = baseline_raw["test_score"].mean()
+score_baseline = baseline_selected_features["test_score"].mean()
+
+# Define a threshold to decide whether to reduce or not the dimensionality for your test case
+dif = round(((score_raw - score_baseline) / score_raw), 3)
+
+# 5% is our limit (ponder how it will impact your product $)
+performance_threshold = -0.050
+
+if dif >= performance_threshold:
+    print(f"It's worth to go with the selected set =D")
+elif dif < performance_threshold:
+    print(f"The performance reduction is not acceptable!!!! >.<")
+
+
+
+# <h2> Make it better ! </h2>
+#
+# <p> Going Further on implementing a robust feature selection with MRMR , we can use the process explained above to iterate over a range of threshold and choose what's best for our needs instead of a simple score performance evaluation! </p>
+
+
+# Repeat df from example.
+
+import warnings
+
+import pandas as pd
+from sklearn.datasets import make_classification
+
+warnings.filterwarnings('ignore')
+
+X, y = make_classification(
+    n_samples=5000,
+    n_features=30,
+    n_redundant=15,
+    n_clusters_per_class=1,
+    weights=[0.50],
+    class_sep=2,
+    random_state=42
+)
+
+cols = []
+for i in range(len(X[0])):
+   cols.append(f"feat_{i}")
+X = pd.DataFrame(X, columns=cols)
+y = pd.DataFrame({"y": y})
+
+
+
+# Functions to iterate over accepted threshold
+from sklearn.feature_selection import (
+    SelectKBest,
+    mutual_info_classif,
+    mutual_info_regression,
+)
+import os
+import multiprocessing
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import StratifiedKFold, cross_validate
+
+import pandas as pd
+from feature_engine.selection import SmartCorrelatedSelection
+
+
+def select_features_clf(X: pd.DataFrame, y: pd.DataFrame, corr_threshold: float) -> list:
+    """ Function will select a set of features with minimum redundance and maximum relevante based on the set correlation threshold """
+    # Setup Smart Selector /// Tks feature_engine
+    feature_selector = SmartCorrelatedSelection(
+        variables=None,
+        method="spearman",
+        threshold=corr_threshold,
+        missing_values="ignore",
+        selection_method="variance",
+        estimator=None,
+    )
+    feature_selector.fit_transform(X)
+    ### Setup a list of correlated clusters as lists and a list of uncorrelated features
+    correlated_sets = feature_selector.correlated_feature_sets_
+    correlated_clusters = [list(feature) for feature in correlated_sets]
+    correlated_features = [feature for features in correlated_clusters for feature in features]
+    uncorrelated_features = [feature for feature in X if feature not in correlated_features]
+    top_features_cluster = []
+    for cluster in correlated_clusters:
+                selector = SelectKBest(score_func=mutual_info_classif, k=1)  # selects the top feature (k=1) regarding target mutual information
+                selector = selector.fit(X[cluster], y)
+                top_features_cluster.append(
+                    list(selector.get_feature_names_out())[0]
+                )
+    return top_features_cluster + uncorrelated_features
+
+def get_clf_model_scores(X: pd.DataFrame, y: pd.DataFrame, scoring: str, selected_features:list):
+    """ """
+    cv = StratifiedKFold(shuffle=True, random_state=42) 
+    model_result = cross_validate(
+        RandomForestClassifier(),
+        X[selected_features],
+        y,
+        cv=cv,
+        scoring=scoring,
+        groups=None,
+        error_score="raise",
+    )
+    return model_result["test_score"].mean(), model_result["fit_time"].mean(), model_result["score_time"].mean()
+
+def evaluate_clf_feature_selection_range(X: pd.DataFrame, y: pd.DataFrame, scoring:str, corr_range: int, corr_starting_point: float = .98) -> pd.DataFrame:
+    """ Evaluates feature selection for every .01 on corr threshold """
+    evaluation_data = {
+        "corr_threshold": [],
+        scoring: [],
+        "n_features": [],
+        "fit_time": [],
+        "score_time": []
+    }
+    for i in range(corr_range):
+        current_corr_threshold = corr_starting_point - (i / 100) ## Reduces .01 on corr_threshold for every iteration
+        selected_features = select_features_clf(X, y, corr_threshold=current_corr_threshold)
+        score, fit_time, score_time = get_clf_model_scores(X, y, scoring, selected_features)
+        evaluation_data["corr_threshold"].append(current_corr_threshold)
+        evaluation_data[scoring].append(score)
+        evaluation_data["n_features"].append(len(selected_features))
+        evaluation_data["fit_time"].append(fit_time)
+        evaluation_data["score_time"].append(score_time)
+        
+    return pd.DataFrame(evaluation_data)
+
+
+
+evaluation_df = evaluate_clf_feature_selection_range(X, y, "f1", 15)
+
+
+%pip install hiplot
+
+
+import hiplot
+from IPython.display import HTML
+
+# html = hiplot.Experiment.from_dataframe(evaluation_df).to_html()
+# displayHTML(html)
+
+exp = hiplot.Experiment.from_dataframe(evaluation_df)
+HTML(exp.to_html())
+
+
+
+// ---------------------------------------------------
+
+// Recursive-Feature-Elimination.py
+// Recursive-Feature-Elimination.py
+# Generated from: Recursive-Feature-Elimination.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+
+// ---------------------------------------------------
+
+// Drop-Correlated-Features.py
+// Drop-Correlated-Features.py
+# Generated from: Drop-Correlated-Features.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# ## Custom methods in `DropCorrelatedFeatures`
+#
+# In this tutorial we show how to pass a custom method to `DropCorrelatedFeatures` using the association measure [Distance Correlation](https://m-clark.github.io/docs/CorrelationComparison.pdf) from the python package [dcor](https://dcor.readthedocs.io/en/latest/index.html).
+
+
+%pip install dcor
+
+
+import dcor
+import pandas as pd
+import warnings
+
+from sklearn.datasets import make_classification
+from feature_engine.selection import DropCorrelatedFeatures
+
+warnings.filterwarnings('ignore')
+
+
+X, _ = make_classification(
+    n_samples=1000,
+    n_features=12,
+    n_redundant=6,
+    n_clusters_per_class=1,
+    weights=[0.50],
+    class_sep=2,
+    random_state=1,
+)
+
+colnames = ["var_" + str(i) for i in range(12)]
+X = pd.DataFrame(X, columns=colnames)
+
+X
+
+
+dcor_tr = DropCorrelatedFeatures(
+    variables=None, method=dcor.distance_correlation, threshold=0.8
+)
+
+X_dcor = dcor_tr.fit_transform(X)
+
+X_dcor
+
+
+# In the next example, we use the function [sklearn.feature_selection.mutual_info_regression](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_regression.html#sklearn.feature_selection.mutual_info_regression) to calculate the Mutual Information between two numerical variables, dropping any features with a score below 0.8.
+#
+# Remember that the callable should take as input two 1d ndarrays and output a float value, we define a custom function calling the sklearn method.
+
+
+from sklearn.feature_selection import mutual_info_regression
+
+def custom_mi(x, y):
+    x = x.reshape(-1, 1)
+    y = y.reshape(-1, 1)
+    return mutual_info_regression(x, y)[0] # should return a float value
+
+
+mi_tr = DropCorrelatedFeatures(
+    variables=None, method=custom_mi, threshold=0.8
+)
+
+X_mi = mi_tr.fit_transform(X)
+X_mi
+
+
+
+// ---------------------------------------------------
+
+// Smart-Correlation-Selection.py
+// Smart-Correlation-Selection.py
+# Generated from: Smart-Correlation-Selection.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# ## Custom methods in `SmartCorrelatedSelection`
+#
+# In this tutorial we show how to pass a custom method to `SmartCorrelatedSelection` using the association measure [Distance Correlation](https://m-clark.github.io/docs/CorrelationComparison.pdf) from the python package [dcor](https://dcor.readthedocs.io/en/latest/index.html). Install `dcor` before starting the tutorial
+#
+# ```
+# !pip install dcor
+# ```
+
+
+import pandas as pd
+import dcor
+import warnings
+
+from sklearn.datasets import make_classification
+from feature_engine.selection import SmartCorrelatedSelection
+
+warnings.filterwarnings('ignore')
+
+
+X, _ = make_classification(
+    n_samples=1000,
+    n_features=12,
+    n_redundant=6,
+    n_clusters_per_class=1,
+    weights=[0.50],
+    class_sep=2,
+    random_state=1
+)
+
+colnames = ['var_'+str(i) for i in range(12)]
+X = pd.DataFrame(X, columns=colnames)
+
+
+dcor_tr = SmartCorrelatedSelection(
+    variables=None,
+    method=dcor.distance_correlation,
+    threshold=0.75,
+    missing_values="raise",
+    selection_method="variance",
+    estimator=None,
+)
+
+X_dcor = dcor_tr.fit_transform(X)
+X_dcor
+
+
+# In the next example, we use the function [sklearn.feature_selection.mutual_info_regression](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_regression.html#sklearn.feature_selection.mutual_info_regression) to calculate the Mutual Information between two numerical variables.
+#
+# As the callable should take as input two 1d ndarrays and output a float value, we define a custom function calling the sklearn method.
+
+
+from sklearn.feature_selection import mutual_info_regression
+
+def custom_mi(x, y):
+    x = x.reshape(-1, 1)
+    y = y.reshape(-1, 1)
+    return mutual_info_regression(x, y)[0] # should return a float value
+
+
+mi_tr = SmartCorrelatedSelection(
+    variables=None,
+    method=custom_mi,
+    threshold=0.75,
+    missing_values="raise",
+    selection_method="variance",
+    estimator=None,
+)
+
+X_mi = mi_tr.fit_transform(X)
+X_mi
+
+
+
+// ---------------------------------------------------
+
+// Select-by-Feature-Shuffling.py
+// Select-by-Feature-Shuffling.py
+# Generated from: Select-by-Feature-Shuffling.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+
+// ---------------------------------------------------
+
+// Drop-High-PSI-Features.py
+// Drop-High-PSI-Features.py
+# Generated from: Drop-High-PSI-Features.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# # Drop Features with High PSI Value
+#
+# The **DropHighPSIFeatures** selects features based on the Population Stability Index (PSI). The higher this value, the more unstable a feature. Unstable in this case means that there is a significant change in the distribution of the feature in the groups being compared.
+#
+# To determine the PSI of a feature, the DropHighPSIFeatures takes a dataframe and splits it in 2 based on a reference variable. This reference variable can be numerical, categorical or date. If the variable is numerical, the split ensures a certain proportion of observations in each sub-dataframe. If the variable is categorical, we can split the data based on the categories. And if the variable is a date, we can split the data based on dates.
+#
+# **In this notebook, we showcase many possible ways in which the DropHighPSIFeatures can be used to select features based on their PSI value.**
+#
+# ### Dataset
+#
+# We use the Credit Approval data set from the UCI Machine Learning Repository.
+#
+# To download the Credit Approval dataset from the UCI Machine Learning Repository visit [this website](http://archive.ics.uci.edu/ml/machine-learning-databases/credit-screening/) and click on crx.data to download data. Save crx.data to the parent folder to this notebook folder.
+#
+# **Citation:**
+#
+# Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science.
+#
+# # Data preparation
+#
+# We will edit some of the original variables and add some additional features to simulate different scenarios.
+
+
+from datetime import date
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+
+from feature_engine.selection import DropHighPSIFeatures
+
+
+# ## Load the data
+
+
+# load data
+data = pd.read_csv('../data/credit+approval/crx.data', header=None)
+
+# add variable names according to UCI Machine Learning
+# Repo information
+data.columns = ['A'+str(s) for s in range(1,17)]
+
+# replace ? by np.nan
+data = data.replace('?', np.nan)
+
+# re-cast some variables to the correct types 
+data['A2'] = data['A2'].astype('float')
+data['A14'] = data['A14'].astype('float')
+
+# encode target as binary
+data['A16'] = data['A16'].map({'+':1, '-':0})
+
+data.head()
+
+
+# ## Edit and add features
+
+
+# simulate customers from different portfolios.
+data['A13'] = data['A13'].map({'g':'portfolio_1', 's':'portfolio_2', 'p':'portfolio_3'})
+data['A13'].fillna('Unknown', inplace=True)
+
+# simulate customers from different channels
+data['A12'] = data['A12'].map({'f':'wholesale', 't':'retail'})
+data['A12'].fillna('Missing', inplace=True)
+
+
+# simulate customers from different age groups
+
+data['A6'].fillna('Missing', inplace=True)
+
+labels = {
+'w': '20-25',
+'q': '25-30',
+'m': '30-35',
+'r': '35-40',
+'cc': '40-45',
+'k': '45-50',
+'c': '50-55',
+'d': '55-60',
+'x': '60-65',
+'i': '65-70',
+'e': '70-75',
+'aa': '75-80',
+'ff': '85-90',
+'j': 'Unknown',
+'Missing': 'Missing',
+}
+    
+data['A6'] = data['A6'].map(labels)
+
+
+# add a datetime variable
+
+data['date'] = pd.date_range(start='1/1/2018', periods=len(data))
+
+data.head()
+
+
+# ## Data Analysis
+#
+# We will plot the distributions of numerical and categorical variables.
+
+
+# categorical variables
+
+vars_cat = data.select_dtypes(include='O').columns.to_list()
+
+vars_cat
+
+
+for var in vars_cat:
+    data[var].value_counts(normalize=True).plot.bar()
+    plt.title(var)
+    plt.ylabel('% observations')
+    plt.show()
+
+
+# numerical variables
+
+vars_num = data.select_dtypes(exclude='O').columns.to_list()
+
+vars_num.remove('A16')
+
+vars_num.remove('date')
+
+vars_num
+
+
+for var in vars_num:
+    data[var].hist(bins=50)
+    plt.title(var)
+    plt.ylabel('Number observations')
+    plt.show()
+
+
+# # PSI feature selection
+#
+# ## Split data based on proportions
+#
+# DropHighPSIFeatures splits the dataset in 2, a base dataset and a comparison dataset. The comparison dataset is compared against the base dataset to determine the PSI.
+#
+# We may want to divide the dataset just based on **proportion of observations**. We want to have, say, 60% of observations in the base dataset. We can use the **dataframe index** to guide the split.
+#
+# **NOTE** that for the split, the transformer orders the variable, here the index, and then smaller values of the variable will be in the base dataset, and bigger values of the variable will go to the test dataset. In other words, this is not a random split.
+
+
+# First, we split the data into a train and a test set
+
+X_train, X_test, y_train, y_test = train_test_split(
+    data[vars_cat+vars_num],
+    data['A16'],
+    test_size=0.1,
+    random_state=42,
+)
+
+
+# Now we set up the DropHighPSIFeatures
+# to split based on fraction of observations
+
+transformer = DropHighPSIFeatures(
+    split_frac=0.6, # the proportion of obs in the base dataset
+    split_col=None, # If None, it uses the index
+    strategy = 'equal_frequency', # whether to create the bins of equal frequency
+    threshold=0.1, # the PSI threshold to drop variables
+    variables=vars_num, # the variables to analyse
+    missing_values='ignore',
+)
+
+
+# Now we fit the transformer to the train set.
+
+# Here, the transformer will split the data, 
+# determine the PSI of each feature and identify
+# those that will be removed.
+
+transformer.fit(X_train)
+
+
+# the value in the index that determines the separation
+# into base and comparison datasets. 
+
+# Observations whose index value is smaller than 
+# the cut_off will be in the base dataset. 
+# The remaining ones in the test data.
+
+transformer.cut_off_
+
+
+# the PSI threshold above which variables 
+# will be removed.
+
+# We can change this when we initialize the transformer
+
+transformer.threshold
+
+
+# During fit() the transformer determines the PSI
+# values for each variable and stores it.
+
+transformer.psi_values_
+
+
+# The variables that will be dropped:
+# those whose PSI is biggher than the threshold.
+
+transformer.features_to_drop_
+
+
+# To understand what the DropHighPSIFeatures is doing, let's split the train set manually, in the same what that the transformer is doing. Then, let's plot the distribution of the variables in each of the sub-dataframes.
+
+
+# Let's plot the variables distribution
+# in each of the dataset portions
+
+# create series to flag if an observation belongs to
+# the base or test dataframe.
+
+# Note how we use the cut_off identified by the
+# transformer:
+tmp = X_train.index <= transformer.cut_off_
+
+# plot
+sns.ecdfplot(data=X_train, x='A8', hue=tmp)
+plt.title('A8 - moderate PSI')
+
+
+# We observe a difference in the cumulative distribution of A8 between dataframes.
+
+
+# For comparison, let's plot a variable with low PSI
+
+sns.ecdfplot(data=X_train, x='A2', hue=tmp)
+plt.title('A2 - low PSI')
+
+
+# We see that the cumulative distribution of A8 is different in both datasets and this is why it is flagged for removal. On the other hand, the cumulative distribution of A2 is not different in the sub-datasets.
+#
+# Now we can go ahead and drop the features from the train and test sets. We use the transform() method.
+
+
+# print shape before dropping variables
+
+X_train.shape, X_test.shape
+
+
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+
+# print shape **after** dropping variables
+
+X_train.shape, X_test.shape
+
+
+# The datasets have now 2 variables less, those that had higher PSI values.
+#
+# ## Split data based on categorical values
+#
+# In the previous example, we sorted the observations based on a numerical variable, the index, and then we assigned the top 60% of the observations to the base dataframe. 
+#
+# Now, we will sort the observations based on a categorical variable, and assign the top 50% to the base dataframe.
+#
+# **Note** when splitting based on categorical variables the proportions achieved after the split may not match exactly the one specified.
+#
+# ### When is this split useful?
+#
+# This way of splitting the data is useful when, for example, we have a variable with the customer's ID. The ID's normally increase in time, with smaller values corresponding to older customers and bigger ID values corresponding to newly acquired customers.
+#
+# **Our example**
+#
+# In our data, we have customers from different age groups. We want to know if the variable distribution in younger age groups differ from older age groups. This is a suitable case to split based on a categorical value without specifically specifying the cut_off.
+#
+# The transformer will sort the categories of the variable and then those with smaller category values will be in the base dataframe, and the remaining in the comparison dataset.
+
+
+# First, we split the data into a train and a test set
+
+X_train, X_test, y_train, y_test = train_test_split(
+    data[vars_cat+vars_num],
+    data['A16'],
+    test_size=0.1,
+    random_state=42,
+)
+
+
+# Now, we set up the transformer
+
+# Note that if we do not specify which variables to analyse, 
+# the transformer will find the numerical variables automatically
+
+transformer = DropHighPSIFeatures(
+    split_frac=0.5, # percentage of observations in base df
+    split_col='A6', # the categorical variable with the age groups
+    strategy = 'equal_frequency',
+    bins=8, # the number of bins into which the observations should be sorted
+    threshold=0.1,
+    variables=None, # When None, finds numerical variables automatically
+    missing_values='ignore',
+)
+
+
+# Now we fit the transformer to the train set.
+
+# Here, the transformer will split the data, 
+# determine the PSI of each feature and identify
+# those that will be removed.
+
+transformer.fit(X_train)
+
+
+# The transformer identified the numerical variables
+
+transformer.variables_
+
+
+# the age group under which observations will be
+# in the base df.
+
+transformer.cut_off_
+
+
+# The PSI values determined for each feature
+
+transformer.psi_values_
+
+
+# The variables that will be dropped.
+
+transformer.features_to_drop_
+
+
+# There is no significant shift in the distribution of the variables between younger and older customers. Thus, no variables will be dropped.
+#
+# To understand what the DropHighPSIFeatures is doing, let's split the train set manually, in the same what that the transformer is doing. Then, let's plot the distribution of the variables in each of the sub-dataframes.
+
+
+# Let's plot the variables distribution
+# in each of the dataset portions
+
+# create series to flag if an observation belongs to
+# the base or comparison dataframe.
+
+# Note how we use the cut_off identified by the
+# transformer
+tmp = X_train['A6'] <= transformer.cut_off_
+
+# plot
+sns.ecdfplot(data=X_train, x='A8', hue=tmp)
+plt.title('A8 - low PSI')
+
+
+# Let's plot another variable with low PSI
+
+sns.ecdfplot(data=X_train, x='A15', hue=tmp)
+plt.title('A15 - low PSI')
+
+
+# As we can see, the distributions of the variables in both dataframes is quite similar.
+#
+# Now, let's identify which observations were assigned to each sub-dataframe by the transformer.
+
+
+# The observations belonging to these age groups
+# were assigned to the base df.
+
+X_train[tmp]['A6'].unique()
+
+
+# The number of age groups in the base df
+
+X_train[tmp]['A6'].nunique()
+
+
+# Proportion of observations in the base df
+
+len(X_train[tmp]['A6']) / len(X_train)
+
+
+# Note that we aimed for 50% of observations in the base reference, but based on this categorical variable, the closer we could get is 41%.
+
+
+# The observations belonging to these age groups
+# were assigned to the comparison df.
+
+X_train[~tmp]['A6'].unique()
+
+
+# The number of age groups in the comparison df
+
+X_train[~tmp]['A6'].nunique()
+
+
+# Proportion of observations in the comparison df
+
+len(X_train[~tmp]['A6']) / len(X_train)
+
+
+# Note that we have more age groups in the comparison df, but these groups have fewer observations, so the proportion of observations in the base and test dfs is the closest possible to what we wanted: 50%.
+#
+# Now we can go ahead and drop the features from the train and test sets.
+#
+# In this case, we would be dropping None.
+
+
+# print shape before dropping variables
+
+X_train.shape, X_test.shape
+
+
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+
+# print shape **after** dropping variables
+
+X_train.shape, X_test.shape
+
+
+# ## Split data based on distinct values
+#
+# In the previous example, we split the data using a categorical variable as guide, but ultimately, the split was done based on proportion of observations.
+#
+# In the extreme example where 50% of our customers belong to the age group 20-25 and the remaining 50% belong to older age groups, we would have only 1 age group in the base dataframe and all the remaining in the comparison dataframe if we split as we did in our previous example. This may result in a biased comparison.
+#
+# If we want to ensure that we have 50% of the possible age groups in each base and comparison dataframe, we can do so with the parameter `split_distinct`.
+
+
+# First, we split the data into a train and a test set
+
+X_train, X_test, y_train, y_test = train_test_split(
+    data[vars_cat+vars_num],
+    data['A16'],
+    test_size=0.1,
+    random_state=42,
+)
+
+
+transformer = DropHighPSIFeatures(
+    split_frac=0.5, # proportion of (unique) categories in the base df
+    split_distinct=True, # we split based on unique categories
+    split_col='A6', # the categorical variable guiding the split
+    strategy = 'equal_frequency',
+    bins=5,
+    threshold=0.1,
+    missing_values='ignore',
+)
+
+
+# Now we fit the transformer to the train set
+# Here, the transformer will split the data, 
+# determine the PSI of each feature and identify
+# those that will be removed.
+
+transformer.fit(X_train)
+
+
+# the age group under which, observations will be
+# in the base df.
+
+transformer.cut_off_
+
+
+# Note that this cut_off is different from the one we obtained previously.
+
+
+# The PSI values determined for each feature
+
+transformer.psi_values_
+
+
+# The variables that will be dropped.
+
+transformer.features_to_drop_
+
+
+# To understand what the DropHighPSIFeatures is doing, let's split the train set manually, in the same what that the transformer is doing. Then, let's plot the distribution of the variables in each of the sub-dataframes.
+
+
+# Let's plot the variables distribution
+# in each of the dataset portions
+
+# create series to flag if an observation belongs to
+# the base or comparison dataframe.
+
+# Note how we use the cut_off identified by the
+# transformer
+tmp = X_train['A6'] <= transformer.cut_off_
+
+# plot
+sns.ecdfplot(data=X_train, x='A8', hue=tmp)
+plt.title('A8 - high PSI')
+
+
+# There is a mild difference in the variable distribution.
+
+
+# For comparison, let's plot a variable with low PSI
+
+sns.ecdfplot(data=X_train, x='A15', hue=tmp)
+plt.title('A15 - low PSI')
+
+
+# Now, let's identify which observations were assigned to each sub-dataframe by the transformer.
+
+
+# The observations belonging to these age groups
+# were assigned to the base df.
+
+X_train[tmp]['A6'].unique()
+
+
+# The number of age groups in the base df
+
+X_train[tmp]['A6'].nunique()
+
+
+# Proportion of observations in the base df
+
+len(X_train[tmp]['A6']) / len(X_train)
+
+
+# The observations belonging to these age groups
+# were assigned to the comparison df.
+
+X_train[~tmp]['A6'].unique()
+
+
+# The number of age groups in the comparison df
+
+X_train[~tmp]['A6'].nunique()
+
+
+# Proportion of observations in the comparison df
+
+len(X_train[~tmp]['A6']) / len(X_train)
+
+
+# Now, we have a similar proportion of age groups in the base and comparison dfs. But the proportion of observations is different.
+#
+# Now we can go ahead and drop the features from the train and test sets.
+
+
+# print shape before dropping variables
+
+X_train.shape, X_test.shape
+
+
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+
+# print shape **after** dropping variables
+
+X_train.shape, X_test.shape
+
+
+# ## Split based on specific categories
+#
+# In the previous example, the categories had an intrinsic order. What if, we want to split based on category values which do not have an intrinsic order?
+#
+# We can do so by specifying which category values should go to the base dataframe.
+#
+# This way of splitting the data is useful if we want to compare features across customers coming from different portfolios, or different sales channels.
+
+
+# First, we split the data into a train and a test set
+
+X_train, X_test, y_train, y_test = train_test_split(
+    data[vars_cat+vars_num],
+    data['A16'],
+    test_size=0.1,
+    random_state=42,
+)
+
+
+# Set up the transformer 
+
+transformer = DropHighPSIFeatures(
+    cut_off=['portfolio_2', 'portfolio_3'], # the categories that should be in the base df
+    split_col='A13', # the categorical variable with the portfolios
+    strategy = 'equal_width', # the intervals are equidistant
+    bins=5, # the number of intervals into which to sort the numerical values
+    threshold=0.1,
+    variables=vars_num,
+    missing_values='ignore',
+)
+
+
+# Now we fit the transformer to the train set
+# Here, the transformer will split the data, 
+# determine the PSI of each feature and identify
+# those that will be removed.
+
+transformer.fit(X_train)
+
+
+# We specified the cut_off, so we should see
+# the portfolios here
+
+transformer.cut_off_
+
+
+# The transformer stores the PSI values of the variables
+
+transformer.psi_values_
+
+
+# The variables that will be dropped.
+
+transformer.features_to_drop_
+
+
+# It looks like all variables will be dropped.
+#
+# To understand what the DropHighPSIFeatures is doing, let's split the train set manually, in the same what that the transformer is doing. Then, let's plot the distribution of the variables in each of the sub-dataframes.
+
+
+# Let's plot the variables distribution
+# in each of the dataset portions
+
+# create series to flag if an observation belongs to
+# the base or comparison dataframe.
+
+# Note how we use the cut_off identified by the
+# transformer
+tmp = X_train['A13'].isin(transformer.cut_off_)
+
+sns.ecdfplot(data=X_train, x='A3', hue=tmp)
+plt.title('A3 - high PSI')
+
+
+# Let's plot another variable with high PSI
+
+sns.ecdfplot(data=X_train, x='A11', hue=tmp)
+plt.title('A11 - high PSI')
+
+
+# Let's plot a variable with lower PSI
+
+sns.ecdfplot(data=X_train, x='A2', hue=tmp)
+plt.title('A2 - high PSI')
+
+
+# Now we can go ahead and drop the features from the train and test sets.
+
+
+# print shape before dropping variables
+
+X_train.shape, X_test.shape
+
+
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+
+# print shape **after** dropping variables
+
+X_train.shape, X_test.shape
+
+
+# ## Split based on Date
+#
+# If our data had a valid timestamp, we could want to compare the distributions before and after a time point.
+
+
+# Let's find out which are the minimum
+# and maximum dates in our dataset
+
+data['date'].agg(['min', 'max'])
+
+
+# Now, we split the data into a train and a test set
+
+X_train, X_test, y_train, y_test = train_test_split(
+    data[vars_cat+vars_num+['date']],
+    data['A16'],
+    test_size=0.1,
+    random_state=42,
+)
+
+
+# And we specify a transformer to split based
+# on dates
+
+transformer = DropHighPSIFeatures(
+    cut_off =  pd.to_datetime('2018-12-14'), # the cut_off date
+    split_col='date', # the date variable
+    strategy = 'equal_frequency',
+    bins=8,
+    threshold=0.1,
+    missing_values='ignore',
+)
+
+
+# Now we fit the transformer to the train set.
+
+# Here, the transformer will split the data, 
+# determine the PSI of each feature and identify
+# those that will be removed.
+
+transformer.fit(X_train)
+
+
+# We specified the cut_off, so we should see
+# our value here
+
+transformer.cut_off_
+
+
+# The transformer stores the PSI values of the variables
+
+transformer.psi_values_
+
+
+# The variables that will be dropped.
+
+transformer.features_to_drop_
+
+
+# To understand what the DropHighPSIFeatures is doing, let's split the train set manually, in the same what that the transformer is doing. Then, let's plot the distribution of the variables in each of the sub-dataframes.
+
+
+# Let's plot the variables distribution
+# in each of the dataset portions
+
+# create series to flag if an observation belongs to
+# the base or comparison dataframe.
+
+# Note how we use the cut_off identified by the
+# transformer
+tmp = X_train['date'] <= transformer.cut_off_
+
+# plot
+sns.ecdfplot(data=X_train, x='A3', hue=tmp)
+plt.title('A3 - moderate PSI')
+
+
+# For comparison, let's plot a variable with low PSI
+
+sns.ecdfplot(data=X_train, x='A14', hue=tmp)
+
+
+# Now we can go ahead and drop the features from the train and test sets.
+
+
+# print shape before dropping variables
+
+X_train.shape, X_test.shape
+
+
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+
+# print shape **after** dropping variables
+
+X_train.shape, X_test.shape
+
+
+# That is all!
+#
+# I hope I gave you a good idea about how we can use this transformer to select features based on the Population Stability Index.
+
+
+
+// ---------------------------------------------------
+
+// Drop-Duplicated-Features.py
+// Drop-Duplicated-Features.py
+# Generated from: Drop-Duplicated-Features.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+
+// ---------------------------------------------------
+
+// Drop-Arbitrary-Features.py
+// Drop-Arbitrary-Features.py
+# Generated from: Drop-Arbitrary-Features.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+
+// ---------------------------------------------------
+
+// Recursive-Feature-Addition.py
+// Recursive-Feature-Addition.py
+# Generated from: Recursive-Feature-Addition.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+
+// ---------------------------------------------------
+
+// Select-by-Target-Mean-Encoding.py
+// Select-by-Target-Mean-Encoding.py
+# Generated from: Select-by-Target-Mean-Encoding.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
+
+# ## Select with Target Mean as Performance Proxy
+#
+# **Method used in a KDD 2009 competition**
+#
+# This feature selection approach was used by data scientists at the University of Melbourne in the [KDD 2009](http://www.kdd.org/kdd-cup/view/kdd-cup-2009) data science competition. The task consisted in predicting churn based on a dataset with a huge number of features.
+#
+# The authors describe this procedure as an aggressive non-parametric feature selection procedure that is based in contemplating the relationship between the feature and the target.
+#
+#
+# **The procedure consists in the following steps**:
+#
+# For each categorical variable:
+#
+#     1) Separate into train and test
+#
+#     2) Determine the mean value of the target within each label of the categorical variable using the train set
+#
+#     3) Use that mean target value per label as the prediction (using the test set) and calculate the roc-auc.
+#
+# For each numerical variable:
+#
+#     1) Separate into train and test
+#
+#     2) Divide the variable intervals
+#
+#     3) Calculate the mean target within each interval using the training set 
+#
+#     4) Use that mean target value / bin as the prediction (using the test set) and calculate the roc-auc
+#
+#
+# The authors quote the following advantages of the method:
+#
+# - Speed: computing mean and quantiles is direct and efficient
+# - Stability respect to scale: extreme values for continuous variables do not skew the predictions
+# - Comparable between categorical and numerical variables
+# - Accommodation of non-linearities
+#
+# **Important**
+# The authors here use the roc-auc, but in principle, we could use any metric, including those valid for regression.
+#
+# The authors sort continuous variables into percentiles, but Feature-engine gives the option to sort into equal-frequency or equal-width intervals.
+#
+# **Reference**:
+# [Predicting customer behaviour: The University of Melbourne's KDD Cup Report. Miller et al. JMLR Workshop and Conference Proceedings 7:45-55](http://www.mtome.com/Publications/CiML/CiML-v3-book.pdf)
+
+
+import pandas as pd
+import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
+
+from feature_engine.selection import SelectByTargetMeanPerformance
+
+
+# load the titanic dataset
+data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+
+# remove unwanted variables
+data.drop(labels = ['name','boat', 'ticket','body', 'home.dest'], axis=1, inplace=True)
+
+# replace ? by Nan
+data = data.replace('?', np.nan)
+
+# missing values
+data.dropna(subset=['embarked', 'fare'], inplace=True)
+
+data['age'] = data['age'].astype('float')
+data['age'] = data['age'].fillna(data['age'].mean())
+
+data['fare'] = data['fare'].astype('float')
+
+def get_first_cabin(row):
+    try:
+        return row.split()[0]
+    except:
+        return 'N' 
+    
+data['cabin'] = data['cabin'].apply(get_first_cabin)
+
+
+data.head()
+
+
+# Variable preprocessing:
+
+# then I will narrow down the different cabins by selecting only the
+# first letter, which represents the deck in which the cabin was located
+
+# captures first letter of string (the letter of the cabin)
+data['cabin'] = data['cabin'].str[0]
+
+# now we will rename those cabin letters that appear only 1 or 2 in the
+# dataset by N
+
+# replace rare cabins by N
+data['cabin'] = np.where(data['cabin'].isin(['T', 'G']), 'N', data['cabin'])
+
+data['cabin'].unique()
+
+
+data.dtypes
+
+
+# number of passengers per value
+data['parch'].value_counts()
+
+
+# cap variable at 3, the rest of the values are
+# shown by too few observations
+
+data['parch'] = np.where(data['parch']>3,3,data['parch'])
+
+
+data['sibsp'].value_counts()
+
+
+# cap variable at 3, the rest of the values are
+# shown by too few observations
+
+data['sibsp'] = np.where(data['sibsp']>3,3,data['sibsp'])
+
+
+# cast discrete variables as categorical
+
+# feature-engine considers categorical variables all those of type
+# object. So in order to work with numerical variables as if they
+# were categorical, we  need to cast them as object
+
+data[['pclass','sibsp','parch']] = data[['pclass','sibsp','parch']].astype('O')
+
+
+# check absence of missing data
+
+data.isnull().sum()
+
+
+# **Important**
+#
+# In all feature selection procedures, it is good practice to select the features by examining only the training set. And this is to avoid overfit.
+
+
+# separate train and test sets
+
+X_train, X_test, y_train, y_test = train_test_split(
+    data.drop(['survived'], axis=1),
+    data['survived'],
+    test_size=0.3,
+    random_state=0)
+
+X_train.shape, X_test.shape
+
+
+# feautre engine automates the selection for both
+# categorical and numerical variables
+
+sel = SelectByTargetMeanPerformance(
+    variables=None, # automatically finds categorical and numerical variables
+    scoring="roc_auc_score", # the metric to evaluate performance
+    threshold=0.6, # the threshold for feature selection, 
+    bins=3, # the number of intervals to discretise the numerical variables
+    strategy="equal_frequency", # whether the intervals should be of equal size or equal number of observations
+    cv=2,# cross validation
+    random_state=1, #seed for reproducibility
+)
+
+sel.fit(X_train, y_train)
+
+
+# after fitting, we can find the categorical variables
+# using this attribute
+
+sel.variables_categorical_
+
+
+# and here we find the numerical variables
+
+sel.variables_numerical_
+
+
+# here the selector stores the roc-auc per feature
+
+sel.feature_performance_
+
+
+# and these are the features that will be dropped
+
+sel.features_to_drop_
+
+
+X_train = sel.transform(X_train)
+X_test = sel.transform(X_test)
+
+X_train.shape, X_test.shape
+
+
+# That is all for this lecture, I hope you enjoyed it and see you in the next one!
+
+
+
+// ---------------------------------------------------
+
