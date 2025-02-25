@@ -1,5 +1,4 @@
 # Generated from: CombineWithReferenceFeature.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 #
 # ## Feature Creation: Combine with reference feature

@@ -1,7 +1,6 @@
 // Sklearn-wrapper-plus-SimpleImputer.py
 // Sklearn-wrapper-plus-SimpleImputer.py
 # Generated from: Sklearn-wrapper-plus-SimpleImputer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import pandas as pd
 import numpy as np
@@ -115,7 +114,6 @@ X_test[cols].head()
 // Sklearn-wrapper-plus-Categorical-Encoding.py
 // Sklearn-wrapper-plus-Categorical-Encoding.py
 # Generated from: Sklearn-wrapper-plus-Categorical-Encoding.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import pandas as pd
 import numpy as np
@@ -220,7 +218,6 @@ X_test[cols].head()
 // Sklearn-wrapper-plus-scalers.py
 // Sklearn-wrapper-plus-scalers.py
 # Generated from: Sklearn-wrapper-plus-scalers.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import pandas as pd
 import numpy as np
@@ -302,7 +299,6 @@ X_train[cols].std()
 // Sklearn-wrapper-plus-KBinsDiscretizer.py
 // Sklearn-wrapper-plus-KBinsDiscretizer.py
 # Generated from: Sklearn-wrapper-plus-KBinsDiscretizer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import pandas as pd
 import numpy as np
@@ -430,7 +426,6 @@ plt.show()
 // Sklearn-wrapper-plus-feature-selection.py
 // Sklearn-wrapper-plus-feature-selection.py
 # Generated from: Sklearn-wrapper-plus-feature-selection.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import pandas as pd
 import numpy as np

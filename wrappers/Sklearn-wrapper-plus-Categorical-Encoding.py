@@ -1,5 +1,4 @@
 # Generated from: Sklearn-wrapper-plus-Categorical-Encoding.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import pandas as pd
 import numpy as np
@@ -12,24 +11,6 @@ from sklearn.preprocessing import OrdinalEncoder
 from feature_engine.wrappers import SklearnTransformerWrapper
 from feature_engine.encoding import RareLabelEncoder
 
-
-# # load the dataset from Kaggle
-
-# data = pd.read_csv('houseprice.csv')
-# data.head()
-
-# # let's separate into training and testing set
-
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
-
-
 # Read the separate files
 train_df = pd.read_csv('../data/house-prices/train.csv')
 test_df = pd.read_csv('../data/house-prices/test.csv')
@@ -39,7 +20,8 @@ X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
 y_train = train_df['SalePrice']
 
 # For test data, you might not have the target variable
-X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
+# Note: test data might not have SalePrice column
+X_test = test_df.drop(['Id'], axis=1)
 
 print("X_train :", X_train.shape)
 print("X_test :", X_test.shape)
@@ -48,19 +30,20 @@ print("X_test :", X_test.shape)
 # ## OrdinalEncoder
 
 
-cols = ['Alley',
-        'MasVnrType',
-        'BsmtQual',
-        'BsmtCond',
-        'BsmtExposure',
-        'BsmtFinType1',
-        'BsmtFinType2',
-        'Electrical',
-        'FireplaceQu',
-        'GarageType',
-        'GarageFinish',
-        'GarageQual',
-        ]
+cols = [
+    'Alley',
+    'MasVnrType',
+    'BsmtQual',
+    'BsmtCond',
+    'BsmtExposure',
+    'BsmtFinType1',
+    'BsmtFinType2',
+    'Electrical',
+    'FireplaceQu',
+    'GarageType',
+    'GarageFinish',
+    'GarageQual',
+]
 
 
 # let's remove rare labels to avoid errors when encoding
@@ -74,8 +57,8 @@ X_test = rare_label_enc.transform(X_test.fillna('Missing'))
 # now let's replace categories by integers
 
 encoder = SklearnTransformerWrapper(
-    transformer = OrdinalEncoder(),
-    variables = cols,
+    transformer=OrdinalEncoder(),
+    variables=cols,
 )
 
 encoder.fit(X_train)
@@ -96,4 +79,3 @@ X_train[cols].isnull().mean()
 
 
 X_test[cols].head()
-

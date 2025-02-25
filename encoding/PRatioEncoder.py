@@ -1,5 +1,4 @@
 # Generated from: PRatioEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # PRatioEncoder
 #
@@ -22,10 +21,9 @@ from feature_engine.encoding import PRatioEncoder
 from feature_engine.encoding import RareLabelEncoder #to reduce cardinality
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -33,11 +31,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 

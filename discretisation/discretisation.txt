@@ -1,7 +1,6 @@
 // EqualWidthDiscretiser.py
 // EqualWidthDiscretiser.py
 # Generated from: EqualWidthDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # EqualWidthDiscretiser
 #
@@ -209,7 +208,6 @@ print(interval_sizes)
 // ArbitraryDiscretiser_plus_MeanEncoder.py
 // ArbitraryDiscretiser_plus_MeanEncoder.py
 # Generated from: ArbitraryDiscretiser_plus_MeanEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # ArbitraryDiscretiser + MeanEncoder
 #
@@ -245,10 +243,9 @@ from feature_engine.encoding import MeanEncoder
 plt.rcParams["figure.figsize"] = [15,5]
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -256,11 +253,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -329,7 +324,6 @@ plt.show()
 // GeometricWidthDiscretiser_plus_MeanEncoder.py
 // GeometricWidthDiscretiser_plus_MeanEncoder.py
 # Generated from: GeometricWidthDiscretiser_plus_MeanEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # GeometricWidthDiscretiser + MeanEncoder
 #
@@ -365,10 +359,9 @@ from feature_engine.encoding import MeanEncoder
 plt.rcParams["figure.figsize"] = [15,5]
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -376,11 +369,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -449,7 +440,6 @@ plt.show()
 // Model_Score_Discretisation.py
 // Model_Score_Discretisation.py
 # Generated from: Model_Score_Discretisation.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import numpy as np
 import pandas as pd
@@ -587,7 +577,6 @@ predictions_df_t.groupby('cluster').agg(lower_boundary = ('model_probability', '
 // ArbitraryDiscretiser.py
 // ArbitraryDiscretiser.py
 # Generated from: ArbitraryDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # ArbitraryDiscretiser
 #
@@ -756,7 +745,6 @@ plt.show()
 // DecisionTreeDiscretiser.py
 // DecisionTreeDiscretiser.py
 # Generated from: DecisionTreeDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # DecisionTreeDiscretiser
 #
@@ -933,10 +921,9 @@ plt.show()
 # ## DecisionTreeDiscretiser with binary classification
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -944,11 +931,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -1118,7 +1103,6 @@ plt.show()
 // GeometricWidthDiscretiser.py
 // GeometricWidthDiscretiser.py
 # Generated from: GeometricWidthDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import numpy as np
 import pandas as pd
@@ -1181,7 +1165,6 @@ train_t['LotArea'].hist(ax=ax[1], bins=10);
 // EqualFrequencyDiscretiser.py
 // EqualFrequencyDiscretiser.py
 # Generated from: EqualFrequencyDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # EqualFrequencyDiscretiser
 #
@@ -1361,7 +1344,6 @@ np.sort(np.ravel(test_t['GrLivArea'].unique()))
 // EqualFrequencyDiscretiser_plus_WoEEncoder.py
 // EqualFrequencyDiscretiser_plus_WoEEncoder.py
 # Generated from: EqualFrequencyDiscretiser_plus_WoEEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # EqualFrequencyDiscretiser + WoEEncoder
 #
@@ -1403,10 +1385,9 @@ from feature_engine.encoding import WoEEncoder
 plt.rcParams["figure.figsize"] = [15,5]
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -1414,11 +1395,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -1484,7 +1463,6 @@ plt.show()
 // EqualWidthDiscretiser_plus_OrdinalEncoder.py
 // EqualWidthDiscretiser_plus_OrdinalEncoder.py
 # Generated from: EqualWidthDiscretiser_plus_OrdinalEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # EqualWidthDiscretiser + OrdinalEncoder
 #
@@ -1528,10 +1506,9 @@ from feature_engine.encoding import OrdinalEncoder
 plt.rcParams["figure.figsize"] = [15,5]
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -1539,11 +1516,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 

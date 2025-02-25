@@ -1,5 +1,4 @@
 # Generated from: MatchVariables.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # MatchVariables
 #
@@ -16,36 +15,6 @@ import numpy as np
 import pandas as pd
 
 from feature_engine.preprocessing import MatchVariables
-
-
-# # Load titanic dataset from OpenML
-
-# def load_titanic(filepath='../data/titanic.csv'):
-#     # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
-#     data = pd.read_csv(filepath)
-#     data = data.replace('?', np.nan)
-#     data['cabin'] = data['cabin'].astype(str).str[0]
-#     data['pclass'] = data['pclass'].astype('O')
-#     data['age'] = data['age'].astype('float')
-#     data['fare'] = data['fare'].astype('float')
-#     data['embarked'].fillna('C', inplace=True)
-#     data.drop(
-#         # labels=['name', 'ticket', 'boat', 'body', 'home.dest'],
-#         labels=['name', 'ticket'],
-#         axis=1, inplace=True,
-#     )
-#     return data
-
-# data = load_titanic()
-# # data.head()
-# # data.shape
-
-# # separate the dataset into train and test
-
-# train = data.iloc[0:1000, :]
-# test = data.iloc[1000:, :]
-
-# train.shape, test.shape
 
 
 def load_titanic(train_path='../data/titanic-3/train.csv', test_path='../data/titanic-3/test.csv'):

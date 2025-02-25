@@ -1,5 +1,4 @@
 # Generated from: adult-income-with-feature-engine.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Feature creation within a Pipeline
 #
@@ -8,14 +7,6 @@
 # The notebook uses data from UCI Dataset called "Adult Income"
 #
 # The data is publicly available on [UCI repository](https://archive.ics.uci.edu/ml/datasets/adult)
-#
-# Donor:
-#
-# Ronny Kohavi and Barry Becker
-# Data Mining and Visualization
-# Silicon Graphics.
-# e-mail: ronnyk '@' live.com for questions.
-
 
 # Import packages
 

@@ -1,7 +1,6 @@
 // ReciprocalTransformer.py
 // ReciprocalTransformer.py
 # Generated from: ReciprocalTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : ReciprocalTransformer
 #
@@ -222,7 +221,6 @@ train_orig['GrLivArea'].hist(bins=50)
 // BoxCoxTransformer.py
 // BoxCoxTransformer.py
 # Generated from: BoxCoxTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : BoxCoxTransformer
 #
@@ -456,7 +454,6 @@ bct.lambda_dict_
 // LogCpTransformer.py
 // LogCpTransformer.py
 # Generated from: LogCpTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : LogCpTransformer
 #
@@ -552,7 +549,6 @@ tf.C_
 // LogTransformer.py
 // LogTransformer.py
 # Generated from: LogTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : LogTransformer
 #
@@ -841,7 +837,6 @@ train_orig['GrLivArea'].hist(bins=50)
 // YeoJohnsonTransformer.py
 // YeoJohnsonTransformer.py
 # Generated from: YeoJohnsonTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : YeoJohnsonTransformer
 #
@@ -991,7 +986,6 @@ test_t = yjt.transform(test_t)
 // PowerTransformer.py
 // PowerTransformer.py
 # Generated from: PowerTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : PowerTransformer
 #

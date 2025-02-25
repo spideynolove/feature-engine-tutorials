@@ -1,7 +1,6 @@
 // Select-by-Single-Feature-Performance.py
 // Select-by-Single-Feature-Performance.py
 # Generated from: Select-by-Single-Feature-Performance.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## Univariate Single Performance
 #
@@ -230,7 +229,6 @@ pd.Series(sel.feature_performance_)[sel.features_to_drop_].sort_values(ascending
 // Drop-Constant-and-QuasiConstant-Features.py
 // Drop-Constant-and-QuasiConstant-Features.py
 # Generated from: Drop-Constant-and-QuasiConstant-Features.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 
 // ---------------------------------------------------
@@ -238,7 +236,6 @@ pd.Series(sel.feature_performance_)[sel.features_to_drop_].sort_values(ascending
 // Select-by-MinimumRedundance-MaximumRelevante.py
 // Select-by-MinimumRedundance-MaximumRelevante.py
 # Generated from: Select-by-MinimumRedundance-MaximumRelevante.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # MRMR Feature Selection by Maykon Schots & Matheus Rugollo
 
@@ -573,7 +570,6 @@ HTML(exp.to_html())
 // Recursive-Feature-Elimination.py
 // Recursive-Feature-Elimination.py
 # Generated from: Recursive-Feature-Elimination.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 
 // ---------------------------------------------------
@@ -581,7 +577,6 @@ HTML(exp.to_html())
 // Drop-Correlated-Features.py
 // Drop-Correlated-Features.py
 # Generated from: Drop-Correlated-Features.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## Custom methods in `DropCorrelatedFeatures`
 #
@@ -653,7 +648,6 @@ X_mi
 // Smart-Correlation-Selection.py
 // Smart-Correlation-Selection.py
 # Generated from: Smart-Correlation-Selection.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## Custom methods in `SmartCorrelatedSelection`
 #
@@ -733,7 +727,6 @@ X_mi
 // Select-by-Feature-Shuffling.py
 // Select-by-Feature-Shuffling.py
 # Generated from: Select-by-Feature-Shuffling.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 
 // ---------------------------------------------------
@@ -741,7 +734,6 @@ X_mi
 // Drop-High-PSI-Features.py
 // Drop-High-PSI-Features.py
 # Generated from: Drop-High-PSI-Features.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Drop Features with High PSI Value
 #
@@ -1512,7 +1504,6 @@ X_train.shape, X_test.shape
 // Drop-Duplicated-Features.py
 // Drop-Duplicated-Features.py
 # Generated from: Drop-Duplicated-Features.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 
 // ---------------------------------------------------
@@ -1520,7 +1511,6 @@ X_train.shape, X_test.shape
 // Drop-Arbitrary-Features.py
 // Drop-Arbitrary-Features.py
 # Generated from: Drop-Arbitrary-Features.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 
 // ---------------------------------------------------
@@ -1528,7 +1518,6 @@ X_train.shape, X_test.shape
 // Recursive-Feature-Addition.py
 // Recursive-Feature-Addition.py
 # Generated from: Recursive-Feature-Addition.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 
 // ---------------------------------------------------
@@ -1536,7 +1525,6 @@ X_train.shape, X_test.shape
 // Select-by-Target-Mean-Encoding.py
 // Select-by-Target-Mean-Encoding.py
 # Generated from: Select-by-Target-Mean-Encoding.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## Select with Target Mean as Performance Proxy
 #

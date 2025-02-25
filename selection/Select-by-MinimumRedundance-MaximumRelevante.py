@@ -1,5 +1,4 @@
 # Generated from: Select-by-MinimumRedundance-MaximumRelevante.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # MRMR Feature Selection by Maykon Schots & Matheus Rugollo
 

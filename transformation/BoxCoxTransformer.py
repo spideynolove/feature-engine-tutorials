@@ -1,5 +1,4 @@
 # Generated from: BoxCoxTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : BoxCoxTransformer
 #
@@ -34,19 +33,6 @@ from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation import ArbitraryNumberImputer, CategoricalImputer
 from feature_engine.transformation import BoxCoxTransformer
-
-
-# #Read data
-# data = pd.read_csv('houseprice.csv')
-# data.head()
-
-# # let's separate into training and testing set
-
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
-
-# X_train.shape, X_test.shape
-
 
 # Read the separate files
 train_df = pd.read_csv('../data/house-prices/train.csv')
@@ -118,15 +104,6 @@ variables = ['LotFrontage', 'LotArea',
              'TotRmsAbvGrd', 'SalePrice']
 
 
-# data = pd.read_csv('houseprice.csv', usecols=variables)
-
-# # let's separate into training and testing set
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
-
-# X_train.shape, X_test.shape
-
-
 # Read the separate files
 train_df = pd.read_csv('../data/house-prices/train.csv')
 test_df = pd.read_csv('../data/house-prices/test.csv')
@@ -183,25 +160,6 @@ for col in train_numeric.columns:
         print(f"\n{col}:")
         print(f"Max value: {train_numeric[col].max()}")
         print(f"Upper bound: {upper_bound}")
-
-
-# # Temp
-# from feature_engine.transformation import YeoJohnsonTransformer
-# from feature_engine.outliers import Winsorizer
-
-# # First winsorize the outliers
-# winsor = Winsorizer(capping_method='iqr', tail='both', fold=1.5)
-# train_winsorized = winsor.fit_transform(train_numeric)
-
-# # Then apply YeoJohnson transformation (which handles both positive and negative values)
-# yjt = YeoJohnsonTransformer()
-# train_transformed = yjt.fit_transform(train_winsorized)
-
-# # Check the results
-# print("\nSkewness before transformation:")
-# print(train_numeric.skew())
-# print("\nSkewness after transformation:")
-# print(train_transformed.skew())
 
 
 # let's transform all numerical variables

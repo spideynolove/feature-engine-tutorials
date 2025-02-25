@@ -1,5 +1,4 @@
 # Generated from: StringSimilarityEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Imports
 
@@ -18,7 +17,6 @@ from feature_engine.encoding import StringSimilarityEncoder
 # Helper function for loading and preprocessing data
 def load_titanic(filepath='titanic.csv'):
     translate_table = str.maketrans('' , '', string.punctuation)
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     # data['home.dest'] = (
@@ -45,7 +43,6 @@ def load_titanic(filepath='titanic.csv'):
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 

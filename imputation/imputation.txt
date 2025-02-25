@@ -1,7 +1,6 @@
 // CategoricalImputer.py
 // CategoricalImputer.py
 # Generated from: CategoricalImputer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Missing value imputation: CategoricalImputer
 #
@@ -34,24 +33,6 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from  feature_engine.imputation import CategoricalImputer
-
-
-# ## Load data
-
-
-# # Download the data from Kaggle and store it in the same folder as this notebook.
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # Separate the data into train and test sets.
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files
@@ -248,7 +229,6 @@ imputer.get_feature_names_out()
 // DropMissingData.py
 // DropMissingData.py
 # Generated from: DropMissingData.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Missing value imputation: DropMissingData
 #
@@ -282,21 +262,6 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation import DropMissingData
-
-
-# # Download the data from Kaggle and store it in the same folder as this notebook.
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # Separate the data into train and test sets.
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files
@@ -496,7 +461,6 @@ train_t.shape
 // EndTailImputer.py
 // EndTailImputer.py
 # Generated from: EndTailImputer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # EndTailImputer
 #
@@ -532,24 +496,6 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation import EndTailImputer
-
-
-# ## Load data
-
-
-# # Download the data from Kaggle and store it in the same folder as this notebook.
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # Separate the data into train and test sets.
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files
@@ -802,7 +748,6 @@ test_t = imputer.transform(X_test)
 // RandomSampleImputer.py
 // RandomSampleImputer.py
 # Generated from: RandomSampleImputer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Missing value imputation: RandomSampleImputer
 #
@@ -819,13 +764,6 @@ test_t = imputer.transform(X_test)
 #
 # The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
 
-
-# ## Version
-
-
-# Make sure you are using this 
-# Feature-engine version.
-
 import feature_engine
 
 feature_engine.__version__
@@ -838,21 +776,6 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation import RandomSampleImputer
-
-
-# # Download the data from Kaggle and store it in the same folder as this notebook.
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # Separate the data into train and test sets.
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files
@@ -1004,7 +927,6 @@ ax.legend(lines, labels, loc='best')
 // ArbitraryNumberImputer.py
 // ArbitraryNumberImputer.py
 # Generated from: ArbitraryNumberImputer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # ArbitraryNumberImputer
 #
@@ -1037,24 +959,6 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation  import ArbitraryNumberImputer
-
-
-# ## Load data
-
-
-# # Download the data from Kaggle and store it in the same folder as this notebook.
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # Separate the data into train and test sets.
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files
@@ -1219,7 +1123,6 @@ imputer.get_feature_names_out()
 // AddMissingIndicator.py
 // AddMissingIndicator.py
 # Generated from: AddMissingIndicator.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # AddMissingIndicator
 #
@@ -1257,24 +1160,6 @@ from feature_engine.imputation import (
     MeanMedianImputer,
     CategoricalImputer,
 )
-
-
-# ## Load data
-
-
-# # Download the data from Kaggle and store it in the same folder as this notebook.
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # Separate the data into train and test sets.
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files
@@ -1557,7 +1442,6 @@ train_t.isnull().sum()
 // MeanMedianImputer.py
 // MeanMedianImputer.py
 # Generated from: MeanMedianImputer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Missing value imputation: MeanMedianImputer
 #
@@ -1591,24 +1475,6 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from  feature_engine.imputation import MeanMedianImputer
-
-
-# ## Load data
-
-
-# # Download the data from Kaggle and store it in the same folder as this notebook.
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # Separate the data into train and test sets.
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files

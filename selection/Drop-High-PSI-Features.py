@@ -1,5 +1,4 @@
 # Generated from: Drop-High-PSI-Features.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Drop Features with High PSI Value
 #
@@ -44,17 +43,17 @@ data = pd.read_csv('../data/credit+approval/crx.data', header=None)
 
 # add variable names according to UCI Machine Learning
 # Repo information
-data.columns = ['A'+str(s) for s in range(1,17)]
+data.columns = ['A'+str(s) for s in range(1, 17)]
 
 # replace ? by np.nan
 data = data.replace('?', np.nan)
 
-# re-cast some variables to the correct types 
+# re-cast some variables to the correct types
 data['A2'] = data['A2'].astype('float')
 data['A14'] = data['A14'].astype('float')
 
 # encode target as binary
-data['A16'] = data['A16'].map({'+':1, '-':0})
+data['A16'] = data['A16'].map({'+': 1, '-': 0})
 
 data.head()
 
@@ -63,11 +62,12 @@ data.head()
 
 
 # simulate customers from different portfolios.
-data['A13'] = data['A13'].map({'g':'portfolio_1', 's':'portfolio_2', 'p':'portfolio_3'})
+data['A13'] = data['A13'].map(
+    {'g': 'portfolio_1', 's': 'portfolio_2', 'p': 'portfolio_3'})
 data['A13'].fillna('Unknown', inplace=True)
 
 # simulate customers from different channels
-data['A12'] = data['A12'].map({'f':'wholesale', 't':'retail'})
+data['A12'] = data['A12'].map({'f': 'wholesale', 't': 'retail'})
 data['A12'].fillna('Missing', inplace=True)
 
 
@@ -76,23 +76,23 @@ data['A12'].fillna('Missing', inplace=True)
 data['A6'].fillna('Missing', inplace=True)
 
 labels = {
-'w': '20-25',
-'q': '25-30',
-'m': '30-35',
-'r': '35-40',
-'cc': '40-45',
-'k': '45-50',
-'c': '50-55',
-'d': '55-60',
-'x': '60-65',
-'i': '65-70',
-'e': '70-75',
-'aa': '75-80',
-'ff': '85-90',
-'j': 'Unknown',
-'Missing': 'Missing',
+    'w': '20-25',
+    'q': '25-30',
+    'm': '30-35',
+    'r': '35-40',
+    'cc': '40-45',
+    'k': '45-50',
+    'c': '50-55',
+    'd': '55-60',
+    'x': '60-65',
+    'i': '65-70',
+    'e': '70-75',
+    'aa': '75-80',
+    'ff': '85-90',
+    'j': 'Unknown',
+    'Missing': 'Missing',
 }
-    
+
 data['A6'] = data['A6'].map(labels)
 
 
@@ -165,18 +165,18 @@ X_train, X_test, y_train, y_test = train_test_split(
 # to split based on fraction of observations
 
 transformer = DropHighPSIFeatures(
-    split_frac=0.6, # the proportion of obs in the base dataset
-    split_col=None, # If None, it uses the index
-    strategy = 'equal_frequency', # whether to create the bins of equal frequency
-    threshold=0.1, # the PSI threshold to drop variables
-    variables=vars_num, # the variables to analyse
+    split_frac=0.6,  # the proportion of obs in the base dataset
+    split_col=None,  # If None, it uses the index
+    strategy='equal_frequency',  # whether to create the bins of equal frequency
+    threshold=0.1,  # the PSI threshold to drop variables
+    variables=vars_num,  # the variables to analyse
     missing_values='ignore',
 )
 
 
 # Now we fit the transformer to the train set.
 
-# Here, the transformer will split the data, 
+# Here, the transformer will split the data,
 # determine the PSI of each feature and identify
 # those that will be removed.
 
@@ -184,16 +184,16 @@ transformer.fit(X_train)
 
 
 # the value in the index that determines the separation
-# into base and comparison datasets. 
+# into base and comparison datasets.
 
-# Observations whose index value is smaller than 
-# the cut_off will be in the base dataset. 
+# Observations whose index value is smaller than
+# the cut_off will be in the base dataset.
 # The remaining ones in the test data.
 
 transformer.cut_off_
 
 
-# the PSI threshold above which variables 
+# the PSI threshold above which variables
 # will be removed.
 
 # We can change this when we initialize the transformer
@@ -262,7 +262,7 @@ X_train.shape, X_test.shape
 #
 # ## Split data based on categorical values
 #
-# In the previous example, we sorted the observations based on a numerical variable, the index, and then we assigned the top 60% of the observations to the base dataframe. 
+# In the previous example, we sorted the observations based on a numerical variable, the index, and then we assigned the top 60% of the observations to the base dataframe.
 #
 # Now, we will sort the observations based on a categorical variable, and assign the top 50% to the base dataframe.
 #
@@ -291,23 +291,23 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # Now, we set up the transformer
 
-# Note that if we do not specify which variables to analyse, 
+# Note that if we do not specify which variables to analyse,
 # the transformer will find the numerical variables automatically
 
 transformer = DropHighPSIFeatures(
-    split_frac=0.5, # percentage of observations in base df
-    split_col='A6', # the categorical variable with the age groups
-    strategy = 'equal_frequency',
-    bins=8, # the number of bins into which the observations should be sorted
+    split_frac=0.5,  # percentage of observations in base df
+    split_col='A6',  # the categorical variable with the age groups
+    strategy='equal_frequency',
+    bins=8,  # the number of bins into which the observations should be sorted
     threshold=0.1,
-    variables=None, # When None, finds numerical variables automatically
+    variables=None,  # When None, finds numerical variables automatically
     missing_values='ignore',
 )
 
 
 # Now we fit the transformer to the train set.
 
-# Here, the transformer will split the data, 
+# Here, the transformer will split the data,
 # determine the PSI of each feature and identify
 # those that will be removed.
 
@@ -441,10 +441,10 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 transformer = DropHighPSIFeatures(
-    split_frac=0.5, # proportion of (unique) categories in the base df
-    split_distinct=True, # we split based on unique categories
-    split_col='A6', # the categorical variable guiding the split
-    strategy = 'equal_frequency',
+    split_frac=0.5,  # proportion of (unique) categories in the base df
+    split_distinct=True,  # we split based on unique categories
+    split_col='A6',  # the categorical variable guiding the split
+    strategy='equal_frequency',
     bins=5,
     threshold=0.1,
     missing_values='ignore',
@@ -452,7 +452,7 @@ transformer = DropHighPSIFeatures(
 
 
 # Now we fit the transformer to the train set
-# Here, the transformer will split the data, 
+# Here, the transformer will split the data,
 # determine the PSI of each feature and identify
 # those that will be removed.
 
@@ -577,13 +577,14 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 
-# Set up the transformer 
+# Set up the transformer
 
 transformer = DropHighPSIFeatures(
-    cut_off=['portfolio_2', 'portfolio_3'], # the categories that should be in the base df
-    split_col='A13', # the categorical variable with the portfolios
-    strategy = 'equal_width', # the intervals are equidistant
-    bins=5, # the number of intervals into which to sort the numerical values
+    # the categories that should be in the base df
+    cut_off=['portfolio_2', 'portfolio_3'],
+    split_col='A13',  # the categorical variable with the portfolios
+    strategy='equal_width',  # the intervals are equidistant
+    bins=5,  # the number of intervals into which to sort the numerical values
     threshold=0.1,
     variables=vars_num,
     missing_values='ignore',
@@ -591,7 +592,7 @@ transformer = DropHighPSIFeatures(
 
 
 # Now we fit the transformer to the train set
-# Here, the transformer will split the data, 
+# Here, the transformer will split the data,
 # determine the PSI of each feature and identify
 # those that will be removed.
 
@@ -686,9 +687,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 # on dates
 
 transformer = DropHighPSIFeatures(
-    cut_off =  pd.to_datetime('2018-12-14'), # the cut_off date
-    split_col='date', # the date variable
-    strategy = 'equal_frequency',
+    cut_off=pd.to_datetime('2018-12-14'),  # the cut_off date
+    split_col='date',  # the date variable
+    strategy='equal_frequency',
     bins=8,
     threshold=0.1,
     missing_values='ignore',
@@ -697,7 +698,7 @@ transformer = DropHighPSIFeatures(
 
 # Now we fit the transformer to the train set.
 
-# Here, the transformer will split the data, 
+# Here, the transformer will split the data,
 # determine the PSI of each feature and identify
 # those that will be removed.
 
@@ -762,4 +763,3 @@ X_train.shape, X_test.shape
 # That is all!
 #
 # I hope I gave you a good idea about how we can use this transformer to select features based on the Population Stability Index.
-

@@ -1,7 +1,6 @@
 // OutlierTrimmer.py
 // OutlierTrimmer.py
 # Generated from: OutlierTrimmer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # OutlierTrimmer
 # The OutlierTrimmer() removes observations with outliers from the dataset.
@@ -31,10 +30,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.outliers import OutlierTrimmer
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='../data/titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -249,7 +247,6 @@ plot_hist(train_t, 'fare')
 // Winsorizer.py
 // Winsorizer.py
 # Generated from: Winsorizer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Winsorizer
 # Winzorizer finds maximum and minimum values following a Gaussian or skewed distribution as indicated. It can also cap the right, left or both ends of the distribution.
@@ -267,9 +264,6 @@ plot_hist(train_t, 'fare')
 # - the inter-quantile range proximity rule (IQR)
 # - percentiles.
 #
-#
-# ### Example
-
 
 # importing libraries
 import pandas as pd
@@ -281,10 +275,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.outliers import Winsorizer
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='../data/titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -488,7 +481,6 @@ plot_hist(train_t, 'age')
 // ArbitraryOutlierCapper.py
 // ArbitraryOutlierCapper.py
 # Generated from: ArbitraryOutlierCapper.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # ArbitraryOutlierCapper
 # The ArbitraryOutlierCapper() caps the maximum or minimum values of a variable
@@ -511,10 +503,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.outliers import ArbitraryOutlierCapper
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='../data/titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]

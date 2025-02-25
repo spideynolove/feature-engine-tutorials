@@ -1,7 +1,6 @@
 // create-new-features-with-feature-engine.py
 // create-new-features-with-feature-engine.py
 # Generated from: create-new-features-with-feature-engine.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Create new features within a Pipeline
 #
@@ -31,7 +30,6 @@ from sklearn.pipeline import Pipeline
 
 # import classes from Feature-engine
 from feature_engine.creation import RelativeFeatures, MathFeatures
-# from feature_engine.creation import MathFeatures, RelativeFeatures
 
 
 # Load dataset
@@ -391,7 +389,6 @@ plt.show()
 // predict-house-price-with-feature-engine.py
 // predict-house-price-with-feature-engine.py
 # Generated from: predict-house-price-with-feature-engine.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## Regression
 #
@@ -592,7 +589,6 @@ print('test r2: {}'.format(r2_score(y_test, X_test_preds)))
 // adult-income-with-feature-engine.py
 // adult-income-with-feature-engine.py
 # Generated from: adult-income-with-feature-engine.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Feature creation within a Pipeline
 #
@@ -601,14 +597,6 @@ print('test r2: {}'.format(r2_score(y_test, X_test_preds)))
 # The notebook uses data from UCI Dataset called "Adult Income"
 #
 # The data is publicly available on [UCI repository](https://archive.ics.uci.edu/ml/datasets/adult)
-#
-# Donor:
-#
-# Ronny Kohavi and Barry Becker
-# Data Mining and Visualization
-# Silicon Graphics.
-# e-mail: ronnyk '@' live.com for questions.
-
 
 # Import packages
 

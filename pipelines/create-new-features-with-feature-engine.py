@@ -1,5 +1,4 @@
 # Generated from: create-new-features-with-feature-engine.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Create new features within a Pipeline
 #
@@ -29,7 +28,6 @@ from sklearn.pipeline import Pipeline
 
 # import classes from Feature-engine
 from feature_engine.creation import RelativeFeatures, MathFeatures
-# from feature_engine.creation import MathFeatures, RelativeFeatures
 
 
 # Load dataset

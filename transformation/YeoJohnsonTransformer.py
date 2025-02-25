@@ -1,5 +1,4 @@
 # Generated from: YeoJohnsonTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : YeoJohnsonTransformer
 #
@@ -25,23 +24,6 @@ from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation import ArbitraryNumberImputer
 from feature_engine.transformation import YeoJohnsonTransformer
-
-
-# # load the dataset from Kaggle
-
-# data = pd.read_csv('houseprice.csv')
-# data.head()
-
-# # let's separate into training and testing set
-
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files

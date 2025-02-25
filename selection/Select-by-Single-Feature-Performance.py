@@ -1,5 +1,4 @@
 # Generated from: Select-by-Single-Feature-Performance.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## Univariate Single Performance
 #

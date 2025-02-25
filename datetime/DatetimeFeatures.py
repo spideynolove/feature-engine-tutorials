@@ -1,5 +1,4 @@
 # Generated from: DatetimeFeatures.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Datetime variable transformation
 #

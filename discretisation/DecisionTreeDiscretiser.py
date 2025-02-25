@@ -1,5 +1,4 @@
 # Generated from: DecisionTreeDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # DecisionTreeDiscretiser
 #
@@ -31,22 +30,6 @@ from sklearn.model_selection import train_test_split
 from feature_engine.discretisation import DecisionTreeDiscretiser
 
 plt.rcParams["figure.figsize"] = [15,5]
-
-
-# ## DecisionTreeDiscretiser with Regression
-
-
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # let's separate into training and testing set
-# X = data.drop(["Id", "SalePrice"], axis=1)
-# y = data.SalePrice
-
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
-# print("X_train :", X_train.shape)
-# print("X_test :", X_test.shape)
 
 
 # Read the separate files
@@ -176,10 +159,9 @@ plt.show()
 # ## DecisionTreeDiscretiser with binary classification
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -187,11 +169,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 

@@ -1,5 +1,4 @@
 # Generated from: LogTransformer.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : LogTransformer
 #
@@ -28,19 +27,6 @@ from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation import ArbitraryNumberImputer
 from feature_engine.transformation import LogTransformer
-
-
-# # load data
-
-# data = pd.read_csv('houseprice.csv')
-# data.head()
-
-# # let's separate into training and testing set
-
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files
@@ -127,34 +113,6 @@ variables = ['LotFrontage', 'LotArea',
              'TotRmsAbvGrd', 'SalePrice']
 
 
-
-# data = pd.read_csv('houseprice.csv', usecols=variables)
-
-# # let's separate into training and testing set
-
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
-
-# X_train.shape, X_test.shape
-
-
-
-# # Read the separate files - only reading the columns we need
-# train_df = pd.read_csv('../data/house-prices/train.csv', usecols=['Id'] + variables)
-# test_df = pd.read_csv('../data/house-prices/test.csv', usecols=['Id'] + variables[:-1])  # excluding SalePrice for test
-
-# # Separate features and target in training data
-# X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
-# y_train = train_df['SalePrice']
-
-# # For test data, you might not have the target variable
-# X_test = test_df.drop(['Id'], axis=1)
-
-# print("X_train :", X_train.shape)
-# print("X_test :", X_test.shape)
-
-# ----------------------------------------------------------------------------------
-
 # Read the separate files
 train_df = pd.read_csv('../data/house-prices/train.csv')
 test_df = pd.read_csv('../data/house-prices/test.csv')
@@ -212,18 +170,6 @@ for col in area_columns:
 
 # Exclude meaningful zeros from log transformation
 variables_to_transform = [col for col in train_numeric.columns if col not in meaningful_zeros]
-
-
-
-# # Check which columns have zeros or negative values
-# problematic_cols = []
-# for col in train_numeric.columns:
-#     if (train_numeric[col] <= 0).any():
-#         problematic_cols.append(col)
-#         print(f"{col}: Min value = {train_numeric[col].min()}")
-
-# print("\nTotal problematic columns:", len(problematic_cols))
-
 
 
 # Now apply log transformation only to specified variables

@@ -1,7 +1,6 @@
 // MathematicalCombination.py
 // MathematicalCombination.py
 # Generated from: MathematicalCombination.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ### Feature Creation: MathematicalCombination
 # The MathematicalCombination() applies basic mathematical operations **[‘sum’, ‘prod’, ‘mean’, ‘std’, ‘max’, ‘min’]** to multiple features, returning one or more additional features as a result.
@@ -230,7 +229,6 @@ plt.show()
 // CombineWithReferenceFeature.py
 // CombineWithReferenceFeature.py
 # Generated from: CombineWithReferenceFeature.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 #
 # ## Feature Creation: Combine with reference feature

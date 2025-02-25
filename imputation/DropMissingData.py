@@ -1,5 +1,4 @@
 # Generated from: DropMissingData.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Missing value imputation: DropMissingData
 #
@@ -33,21 +32,6 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation import DropMissingData
-
-
-# # Download the data from Kaggle and store it in the same folder as this notebook.
-# data = pd.read_csv('../data/housing.csv')
-# data.head()
-
-# # Separate the data into train and test sets.
-# X_train, X_test, y_train, y_test = train_test_split(
-#     data.drop(['Id', 'SalePrice'], axis=1),
-#     data['SalePrice'],
-#     test_size=0.3,
-#     random_state=0,
-# )
-
-# X_train.shape, X_test.shape
 
 
 # Read the separate files

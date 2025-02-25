@@ -1,5 +1,4 @@
 # Generated from: Select-by-Target-Mean-Encoding.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## Select with Target Mean as Performance Proxy
 #

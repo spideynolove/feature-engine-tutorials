@@ -1,5 +1,4 @@
 # Generated from: MathematicalCombination.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ### Feature Creation: MathematicalCombination
 # The MathematicalCombination() applies basic mathematical operations **[‘sum’, ‘prod’, ‘mean’, ‘std’, ‘max’, ‘min’]** to multiple features, returning one or more additional features as a result.

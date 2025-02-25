@@ -1,12 +1,11 @@
 # Generated from: Drop-Correlated-Features.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## Custom methods in `DropCorrelatedFeatures`
 #
 # In this tutorial we show how to pass a custom method to `DropCorrelatedFeatures` using the association measure [Distance Correlation](https://m-clark.github.io/docs/CorrelationComparison.pdf) from the python package [dcor](https://dcor.readthedocs.io/en/latest/index.html).
 
 
-%pip install dcor
+# %pip install dcor
 
 
 import dcor

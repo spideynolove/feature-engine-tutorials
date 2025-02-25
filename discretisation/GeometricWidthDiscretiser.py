@@ -1,5 +1,4 @@
 # Generated from: GeometricWidthDiscretiser.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 import numpy as np
 import pandas as pd
@@ -9,17 +8,6 @@ from feature_engine.discretisation import GeometricWidthDiscretiser
 
 
 data = pd.read_csv('../data/housing.csv')   # ~ rename from train.csv
-# data.head()
-
-# # let's separate into training and testing set
-# X = data.drop(["Id", "SalePrice"], axis=1)
-# y = data.SalePrice
-
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
-# print("X_train :", X_train.shape)   # (1022, 79)
-# print("X_test :", X_test.shape)     # (438, 79)
-
 
 # Read the separate files
 train_df = pd.read_csv('../data/house-prices/train.csv')

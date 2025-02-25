@@ -1,5 +1,4 @@
 # Generated from: ArbitraryOutlierCapper.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # ArbitraryOutlierCapper
 # The ArbitraryOutlierCapper() caps the maximum or minimum values of a variable
@@ -22,10 +21,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.outliers import ArbitraryOutlierCapper
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='../data/titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]

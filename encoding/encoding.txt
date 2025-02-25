@@ -1,7 +1,6 @@
 // StringSimilarityEncoder.py
 // StringSimilarityEncoder.py
 # Generated from: StringSimilarityEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Imports
 
@@ -20,7 +19,6 @@ from feature_engine.encoding import StringSimilarityEncoder
 # Helper function for loading and preprocessing data
 def load_titanic(filepath='titanic.csv'):
     translate_table = str.maketrans('' , '', string.punctuation)
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     # data['home.dest'] = (
@@ -47,7 +45,6 @@ def load_titanic(filepath='titanic.csv'):
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -204,7 +201,6 @@ train_compressed.shape
 // OrdinalEncoder.py
 // OrdinalEncoder.py
 # Generated from: OrdinalEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # OrdinalEncoder
 # The OrdinalEncoder() will replace the variable labels by digits, from 1 to the number of different labels. 
@@ -222,10 +218,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.encoding import OrdinalEncoder
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -233,11 +228,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -382,7 +375,6 @@ test_t.sample(5)
 // RareLabelEncoder.py
 // RareLabelEncoder.py
 # Generated from: RareLabelEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # RareLabelEncoder
 #
@@ -401,10 +393,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.encoding import RareLabelEncoder
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -412,11 +403,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -591,7 +580,6 @@ test_t.sample(5)
 // OneHotEncoder.py
 // OneHotEncoder.py
 # Generated from: OneHotEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # OneHotEncoder
 # Performs One Hot Encoding.
@@ -613,10 +601,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.encoding import OneHotEncoder
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -624,11 +611,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -825,7 +810,6 @@ test_t.head()
 // WoEEncoder.py
 // WoEEncoder.py
 # Generated from: WoEEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # ## WoEEncoder (weight of evidence)
 #
@@ -845,10 +829,9 @@ from feature_engine.encoding import WoEEncoder
 from feature_engine.encoding import RareLabelEncoder #to reduce cardinality
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -856,11 +839,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -984,7 +965,6 @@ test_t.head()
 // DecisionTreeEncoder.py
 // DecisionTreeEncoder.py
 # Generated from: DecisionTreeEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # DecisionTreeEncoder
 #
@@ -999,10 +979,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.encoding import DecisionTreeEncoder
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -1010,11 +989,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -1150,7 +1127,6 @@ test_t.sample(5)
 // CountFrequencyEncoder.py
 // CountFrequencyEncoder.py
 # Generated from: CountFrequencyEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # CountFrequencyEncoder
 # <p>The CountFrequencyEncoder() replaces categories by the count of
@@ -1168,10 +1144,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.encoding import CountFrequencyEncoder
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -1179,11 +1154,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -1318,7 +1291,6 @@ test_t.head()
 // PRatioEncoder.py
 // PRatioEncoder.py
 # Generated from: PRatioEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # PRatioEncoder
 #
@@ -1341,10 +1313,9 @@ from feature_engine.encoding import PRatioEncoder
 from feature_engine.encoding import RareLabelEncoder #to reduce cardinality
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -1352,11 +1323,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
@@ -1521,7 +1490,6 @@ test_t.sample(5)
 // MeanEncoder.py
 // MeanEncoder.py
 # Generated from: MeanEncoder.ipynb
-# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # MeanEncoder
 #
@@ -1536,10 +1504,9 @@ from sklearn.model_selection import train_test_split
 from feature_engine.encoding import MeanEncoder
 
 
-# Load titanic dataset from OpenML
+# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
-    # data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
     data['cabin'] = data['cabin'].astype(str).str[0]
@@ -1547,11 +1514,9 @@ def load_titanic(filepath='titanic.csv'):
     data['age'] = data['age'].astype('float').fillna(data.age.median())
     data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
     data['embarked'].fillna('C', inplace=True)
-    # data.drop(labels=['boat', 'body', 'home.dest', 'name', 'ticket'], axis=1, inplace=True)
     return data
 
 
-# data = load_titanic("../data/titanic.csv")
 data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
 data.head()
 
