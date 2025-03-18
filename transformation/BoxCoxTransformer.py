@@ -1,4 +1,5 @@
 # Generated from: BoxCoxTransformer.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : BoxCoxTransformer
 #
@@ -33,6 +34,7 @@ from sklearn.model_selection import train_test_split
 
 from feature_engine.imputation import ArbitraryNumberImputer, CategoricalImputer
 from feature_engine.transformation import BoxCoxTransformer
+
 
 # Read the separate files
 train_df = pd.read_csv('../data/house-prices/train.csv')
@@ -162,8 +164,56 @@ for col in train_numeric.columns:
         print(f"Upper bound: {upper_bound}")
 
 
-# let's transform all numerical variables
+"""
 
+from feature_engine.transformation import YeoJohnsonTransformer
+from feature_engine.outliers import Winsorizer
+
+# # ---------------- Fix 1 ---------------- 
+# # Remove columns with low variation
+# problematic_cols = ['BsmtFinSF2', 'LowQualFinSF', 'BsmtHalfBath', 'KitchenAbvGr', 
+#                     'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal']
+# train_numeric_filtered = train_numeric.drop(columns=problematic_cols)
+
+# # Apply Winsorizer
+# winsor = Winsorizer(capping_method='iqr', tail='both', fold=1.5)
+# train_winsorized = winsor.fit_transform(train_numeric_filtered)
+
+# # ---------------- Fix 2 ---------------- 
+# # Using percentiles instead of IQR
+# winsor = Winsorizer(capping_method='gaussian', tail='both', fold=0.05)  # 5th and 95th percentiles
+# train_winsorized = winsor.fit_transform(train_numeric)
+
+# ---------------- Fix 3 ---------------- 
+# First, process columns with sufficient variation
+problematic_cols = ['BsmtFinSF2', 'LowQualFinSF', 'BsmtHalfBath', 'KitchenAbvGr', 
+                    'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal']
+good_cols = [col for col in train_numeric.columns if col not in problematic_cols]
+train_good = train_numeric[good_cols]
+
+# Apply Winsorizer to good columns
+winsor = Winsorizer(capping_method='iqr', tail='both', fold=1.5)
+train_winsorized_good = winsor.fit_transform(train_good)
+
+# Add back the problematic columns without winsorizing
+train_winsorized = pd.concat([train_winsorized_good, train_numeric[problematic_cols]], axis=1)
+
+# ---------------- End All Fix ---------------- 
+
+# Then apply YeoJohnson transformation (which handles both positive and negative values)
+yjt = YeoJohnsonTransformer()
+train_transformed = yjt.fit_transform(train_winsorized)
+
+# Check the results
+print("\nSkewness before transformation:")
+print(train_numeric.skew())
+print("\nSkewness after transformation:")
+print(train_transformed.skew())
+
+"""
+
+
+# let's transform all numerical variables
 bct = BoxCoxTransformer()
 
 # bct.fit(train_t)
@@ -175,9 +225,24 @@ bct.fit(train_numeric)
 bct.variables_
 
 
-# transform  variables
-train_t = bct.transform(train_t)
-test_t = bct.transform(test_t)
+# # transform  variables
+
+# -- Error
+# train_t = bct.transform(train_t)
+# test_t = bct.transform(test_t)
+
+# -- Error
+# train_t[numeric_columns] = bct.transform(train_numeric)
+# test_t[numeric_columns] = bct.transform(test_numeric)
+
+from feature_engine.transformation import YeoJohnsonTransformer
+
+test_numeric = test_t[numeric_columns].copy()
+yjt = YeoJohnsonTransformer()
+yjt.fit(train_numeric)
+
+train_t[numeric_columns] = yjt.transform(train_numeric)
+test_t[numeric_columns] = yjt.transform(test_numeric)
 
 
 # learned parameters

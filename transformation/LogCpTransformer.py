@@ -1,4 +1,5 @@
 # Generated from: LogCpTransformer.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : LogCpTransformer
 #

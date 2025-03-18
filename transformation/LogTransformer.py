@@ -1,4 +1,5 @@
 # Generated from: LogTransformer.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : LogTransformer
 #
@@ -113,6 +114,7 @@ variables = ['LotFrontage', 'LotArea',
              'TotRmsAbvGrd', 'SalePrice']
 
 
+
 # Read the separate files
 train_df = pd.read_csv('../data/house-prices/train.csv')
 test_df = pd.read_csv('../data/house-prices/test.csv')
@@ -172,6 +174,8 @@ for col in area_columns:
 variables_to_transform = [col for col in train_numeric.columns if col not in meaningful_zeros]
 
 
+
+
 # Now apply log transformation only to specified variables
 lt = LogTransformer(base='10', variables=variables_to_transform)
 lt.fit(train_shifted)
@@ -197,8 +201,35 @@ train_t.columns
 
 # transform the data
 
-train_t = lt.transform(train_t)
-test_t = lt.transform(test_t)
+# # -- Error
+# train_t = lt.transform(train_t)
+# test_t = lt.transform(test_t)
+
+# Create shifted versions of both train and test data for the specified columns
+train_shifted = train_t.copy()
+test_shifted = test_t.copy()
+
+# Add small constant (1) only to area-based columns in both datasets
+for col in area_columns:
+    if col in train_t.columns:
+        train_shifted[col] = train_t[col] + 1
+    if col in test_t.columns:
+        test_shifted[col] = test_t[col] + 1
+
+# Exclude meaningful zeros from log transformation
+variables_to_transform = [col for col in train_numeric.columns if col not in meaningful_zeros]
+
+# Fit the transformer on the shifted training data
+lt = LogTransformer(base='10', variables=variables_to_transform)
+lt.fit(train_shifted)
+
+# Transform only the specified variables in both datasets
+train_transformed = lt.transform(train_shifted)
+test_transformed = lt.transform(test_shifted)
+
+# Update the original datasets with the transformed values
+train_t[variables_to_transform] = train_transformed[variables_to_transform]
+test_t[variables_to_transform] = test_transformed[variables_to_transform]
 
 
 # transformed variable

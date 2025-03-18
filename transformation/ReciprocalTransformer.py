@@ -1,4 +1,5 @@
 # Generated from: ReciprocalTransformer.ipynb
+# Warning: This is an auto-generated file. Changes may be overwritten.
 
 # # Variable transformers : ReciprocalTransformer
 #
@@ -111,6 +112,7 @@ train_orig['GrLivArea'].hist(bins=50)
 variables = ['LotFrontage', 'LotArea',
              '1stFlrSF', 'GrLivArea',
              'TotRmsAbvGrd', 'SalePrice']
+
 
 
 # Read the separate files - only reading the columns we need
