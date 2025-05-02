@@ -1,16 +1,3 @@
-# Generated from: MathematicalCombination.ipynb
-
-# ### Feature Creation: MathematicalCombination
-# The MathematicalCombination() applies basic mathematical operations **[‘sum’, ‘prod’, ‘mean’, ‘std’, ‘max’, ‘min’]** to multiple features, returning one or more additional features as a result.
-#
-# For this demonstration, we use the UCI Wine Quality Dataset.
-#
-# The data is publicly available on **[UCI repository](https://archive.ics.uci.edu/ml/datasets/Wine+Quality)**
-#
-# P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis.
-# Modeling wine preferences by data mining from physicochemical properties. In Decision Support Systems, Elsevier, 47(4):547-553, 2009.
-
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -37,11 +24,7 @@ pd.set_option('display.max_columns', None)
 # Read data
 data = pd.read_csv('../data/winequality-red.csv', sep=';')
 
-data.head()
-
-
 # **This Data contains 11 features, all numerical, with no missing values.**
-
 
 # Let's transform the Target, i.e Wine Quality into a binary classification problem:
 
@@ -128,20 +111,7 @@ data_t.head()
 
 multiple_combinator._get_new_features_name()
 
-
-# # and here the variable names and the operation that was
-# # applied to create that variable
-
-# multiple_combinator.combination_dict_
-
-# # {'mean(fixed acidity-volatile acidity)': 'mean',
-# #  'sum(fixed acidity-volatile acidity)': 'sum'}
-
-
-
 # ### Pipeline Example
-
-
 # We can put all these transformations into single pipeline:
 #
 # 1. Create new variables
@@ -219,4 +189,3 @@ plt.xlabel('False Positive Rate = 1 - Specificity Score')
 plt.ylabel('True Positive Rate  = Recall Score')
 plt.title('ROC Curve')
 plt.show()
-

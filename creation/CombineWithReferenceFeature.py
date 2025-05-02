@@ -1,17 +1,3 @@
-# Generated from: CombineWithReferenceFeature.ipynb
-
-#
-# ## Feature Creation: Combine with reference feature
-#
-# The CombineWithReferenceFeature() applies combines a group of variables with a group of reference variables utilising mathematical operations ['sub', 'div','add','mul'], returning one or more additional features as a result.
-#
-# For this demonstration, we use the UCI Wine Quality Dataset.
-#
-# The data is publicly available on [UCI repository](https://archive.ics.uci.edu/ml/datasets/Wine+Quality)
-#
-# P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. Modeling wine preferences by data mining from physicochemical properties. In Decision Support Systems, Elsevier, 47(4):547-553, 2009.
-
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -37,14 +23,9 @@ from feature_engine.imputation import MeanMedianImputer
 pd.set_option('display.max_columns', None)
 
 
-# Read data
 data = pd.read_csv('../data/winequality-red.csv', sep=';')
 
-data.head()
-
-
 # **This Data contains 11 features, all numerical, with no missing values.**
-
 
 # Let's transform the Target, i.e Wine Quality into a binary classification problem:
 
@@ -55,7 +36,6 @@ labels = [0, 1] # 'low'=0, 'high'=1
 data['quality_range']= pd.cut(x=data['quality'], bins=bins, labels=labels)
 
 data[['quality_range','quality']].head(5)
-
 
 data.shape
 
@@ -114,19 +94,6 @@ div_with_reference_feature = RelativeFeatures(
 
 # # Create the Combinators
 
-# sub_with_reference_feature = MathFeatures(
-#     variables=['total sulfur dioxide', 'free sulfur dioxide'],
-#     func=operator.sub,
-#     new_variables_names=['non_free_sulfur_dioxide']
-# )
-
-# div_with_reference_feature = MathFeatures(
-#     variables=['free sulfur dioxide', 'total sulfur dioxide'],
-#     func=operator.truediv,
-#     new_variables_names=['percentage_free_sulfur']
-# )
-
-
 # Fit the Sub Combinator on training data
 sub_with_reference_feature.fit(data)
 
@@ -162,13 +129,6 @@ multiple_combinator = RelativeFeatures(
     reference=['volatile acidity'],
     func=['div', 'add'],
 )
-
-
-# multiple_combinator = MathFeatures(
-#     variables=['fixed acidity', 'volatile acidity'],
-#     func=[binary_div, binary_add],
-#     new_variables_names=['ratio_fixed_to_volatile', 'total_acidity']
-# )
 
 
 # Fit the Combinator to the training data
@@ -241,38 +201,6 @@ value_pipe = pipe([
 ])
 
 
-# value_pipe = pipe([
-
-#     # Create new features
-#     ('subtraction', MathFeatures(
-#         variables=['total sulfur dioxide', 'free sulfur dioxide'],
-#         func=binary_sub,
-#         new_variables_names=['non_free_sulfur_dioxide']
-#     )
-#     ),
-
-#     ('ratio', MathFeatures(
-#         variables=['free sulfur dioxide', 'total sulfur dioxide'],
-#         func=binary_div,
-#         new_variables_names=['percentage_free_sulfur']
-#     )
-#     ),
-
-#     ('acidity', MathFeatures(
-#         variables=['fixed acidity', 'volatile acidity'],
-#         func=[binary_div, binary_add],
-#         new_variables_names=['ratio_fixed_to_volatile', 'total_acidity']
-#     )
-#     ),
-
-#     # scale features
-#     ('scaler', StandardScaler()),
-
-#     # Logistic Regression
-#     ('LogisticRegression', LogisticRegression())
-# ])
-
-
 value_pipe.fit(X_train, y_train)
 
 
@@ -318,4 +246,3 @@ plt.xlabel('False Positive Rate = 1 - Specificity Score')
 plt.ylabel('True Positive Rate  = Recall Score')
 plt.title('ROC Curve')
 plt.show()
-
