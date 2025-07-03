@@ -1,0 +1,187 @@
+Directory structure:
+└── wrappers/
+    ├── Sklearn-wrapper-plus-Categorical-Encoding.py
+    ├── Sklearn-wrapper-plus-KBinsDiscretizer.py
+    ├── Sklearn-wrapper-plus-SimpleImputer.py
+    ├── Sklearn-wrapper-plus-feature-selection.py
+    └── Sklearn-wrapper-plus-scalers.py
+
+================================================
+File: Sklearn-wrapper-plus-Categorical-Encoding.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OrdinalEncoder
+from feature_engine.wrappers import SklearnTransformerWrapper
+from feature_engine.encoding import RareLabelEncoder
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+cols = ['Alley', 'MasVnrType', 'BsmtQual', 'BsmtCond', 'BsmtExposure',
+    'BsmtFinType1', 'BsmtFinType2', 'Electrical', 'FireplaceQu',
+    'GarageType', 'GarageFinish', 'GarageQual']
+rare_label_enc = RareLabelEncoder(n_categories=2, variables=cols)
+X_train = rare_label_enc.fit_transform(X_train.fillna('Missing'))
+X_test = rare_label_enc.transform(X_test.fillna('Missing'))
+encoder = SklearnTransformerWrapper(transformer=OrdinalEncoder(), variables
+    =cols)
+encoder.fit(X_train)
+encoder.transformer_.categories_
+X_train = encoder.transform(X_train)
+X_test = encoder.transform(X_test)
+X_train[cols].isnull().mean()
+X_test[cols].head()
+
+
+
+================================================
+File: Sklearn-wrapper-plus-KBinsDiscretizer.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import KBinsDiscretizer
+from feature_engine.wrappers import SklearnTransformerWrapper
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+cols = [var for var in X_train.columns if X_train[var].dtypes != 'O']
+cols
+X_train[cols].hist(bins=50, figsize=(15, 15))
+plt.show()
+variables = ['GrLivArea', 'GarageArea']
+X_train[variables].isnull().mean()
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+discretizer = Pipeline([('imputer', SklearnTransformerWrapper(transformer=
+    SimpleImputer(strategy='median'), variables=variables)), ('discretizer',
+    SklearnTransformerWrapper(transformer=KBinsDiscretizer(n_bins=5,
+    strategy='quantile', encode='ordinal'), variables=variables))])
+discretizer.fit(X_train)
+X_train = discretizer.transform(X_train)
+X_test = discretizer.transform(X_test)
+X_test['GrLivArea'].value_counts(normalize=True)
+X_test['GarageArea'].value_counts(normalize=True)
+X_test[variables].hist()
+plt.show()
+
+
+
+================================================
+File: Sklearn-wrapper-plus-SimpleImputer.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
+from feature_engine.wrappers import SklearnTransformerWrapper
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+imputer = SklearnTransformerWrapper(transformer=SimpleImputer(strategy=
+    'mean'), variables=['LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.transformer_.statistics_
+X_train = imputer.transform(X_train)
+X_test = imputer.transform(X_test)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+cols = [c for c in train_df.columns if train_df[c].dtypes == 'O' and 
+    train_df[c].isnull().sum() > 0]
+train_df[cols].head()
+imputer = SklearnTransformerWrapper(transformer=SimpleImputer(strategy=
+    'most_frequent'), variables=cols)
+imputer.fit(X_train)
+imputer.transformer_.statistics_
+X_train = imputer.transform(X_train)
+X_test = imputer.transform(X_test)
+X_train[cols].isnull().mean()
+X_test[cols].head()
+
+
+
+================================================
+File: Sklearn-wrapper-plus-feature-selection.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import f_regression, SelectKBest, SelectFromModel
+from sklearn.linear_model import Lasso
+from feature_engine.wrappers import SklearnTransformerWrapper
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+cols = [var for var in X_train.columns if X_train[var].dtypes != 'O']
+cols
+selector = SklearnTransformerWrapper(transformer=SelectKBest(f_regression,
+    k=5), variables=cols)
+selector.fit(X_train.fillna(0), y_train)
+selector.transformer_.get_support(indices=True)
+X_train.columns[selector.transformer_.get_support(indices=True)]
+X_train_t = selector.transform(X_train.fillna(0))
+X_test_t = selector.transform(X_test.fillna(0))
+X_test_t.head()
+lasso = Lasso(alpha=10000, random_state=0)
+sfm = SelectFromModel(lasso, prefit=False)
+selector = SklearnTransformerWrapper(transformer=sfm, variables=cols)
+selector.fit(X_train.fillna(0), y_train)
+selector.transformer_.get_support(indices=True)
+len(selector.transformer_.get_support(indices=True))
+len(cols)
+X_train_t = selector.transform(X_train.fillna(0))
+X_test_t = selector.transform(X_test.fillna(0))
+X_test_t.head()
+
+
+
+================================================
+File: Sklearn-wrapper-plus-scalers.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from feature_engine.wrappers import SklearnTransformerWrapper
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+cols = [var for var in X_train.columns if X_train[var].dtypes != 'O']
+cols
+scaler = SklearnTransformerWrapper(transformer=StandardScaler(), variables=cols
+    )
+scaler.fit(X_train.fillna(0))
+X_train = scaler.transform(X_train.fillna(0))
+X_test = scaler.transform(X_test.fillna(0))
+scaler.transformer_.mean_
+scaler.transformer_.scale_
+X_train[cols].mean()
+X_train[cols].std()
+
+

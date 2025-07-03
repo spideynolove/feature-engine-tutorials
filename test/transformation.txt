@@ -1,0 +1,473 @@
+Directory structure:
+└── transformation/
+    ├── BoxCoxTransformer.py
+    ├── LogCpTransformer.py
+    ├── LogTransformer.py
+    ├── PowerTransformer.py
+    ├── ReciprocalTransformer.py
+    └── YeoJohnsonTransformer.py
+
+================================================
+File: BoxCoxTransformer.py
+================================================
+"""
+# Variable transformers : BoxCoxTransformer
+
+The BoxCoxTransformer() applies the BoxCox transformation to numerical
+variables.
+
+The Box-Cox transformation is defined as:
+
+- T(Y)=(Y exp(λ)−1)/λ if λ!=0
+- log(Y) otherwise
+
+where Y is the response variable and λ is the transformation parameter. λ varies,
+typically from -5 to 5. In the transformation, all values of λ are considered and
+the optimal value for a given variable is selected.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer, CategoricalImputer
+from feature_engine.transformation import BoxCoxTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+bct = BoxCoxTransformer(variables=['LotArea', 'GrLivArea'])
+bct.fit(X_train)
+bct.lambda_dict_
+train_t = bct.transform(X_train)
+test_t = bct.transform(X_test)
+X_train['GrLivArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('GrLivArea')
+train_t['GrLivArea'].hist(bins=50)
+plt.title('Transformed variable')
+plt.xlabel('GrLivArea')
+X_train['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+variables = ['LotFrontage', 'LotArea', '1stFlrSF', 'GrLivArea',
+    'TotRmsAbvGrd', 'SalePrice']
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+arbitrary_imputer = ArbitraryNumberImputer(arbitrary_number=2)
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+numeric_columns = train_t.select_dtypes(include=['int64', 'float64']).columns
+numeric_columns
+train_numeric = train_t[numeric_columns].copy()
+for column in numeric_columns:
+    min_val = train_numeric[column].min()
+    if min_val <= 0:
+        print(f'{column}: minimum value = {min_val}')
+        shift = abs(min_val) + 1
+        train_numeric[column] = train_numeric[column] + shift
+train_numeric.describe()
+for col in train_numeric.columns:
+    q75 = train_numeric[col].quantile(0.75)
+    q25 = train_numeric[col].quantile(0.25)
+    iqr = q75 - q25
+    upper_bound = q75 + 1.5 * iqr
+    if train_numeric[col].max() > upper_bound:
+        print(f'\n{col}:')
+        print(f'Max value: {train_numeric[col].max()}')
+        print(f'Upper bound: {upper_bound}')
+"""
+
+from feature_engine.transformation import YeoJohnsonTransformer
+from feature_engine.outliers import Winsorizer
+
+
+
+
+problematic_cols = ['BsmtFinSF2', 'LowQualFinSF', 'BsmtHalfBath', 'KitchenAbvGr', 
+                    'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal']
+good_cols = [col for col in train_numeric.columns if col not in problematic_cols]
+train_good = train_numeric[good_cols]
+
+winsor = Winsorizer(capping_method='iqr', tail='both', fold=1.5)
+train_winsorized_good = winsor.fit_transform(train_good)
+
+train_winsorized = pd.concat([train_winsorized_good, train_numeric[problematic_cols]], axis=1)
+
+
+yjt = YeoJohnsonTransformer()
+train_transformed = yjt.fit_transform(train_winsorized)
+
+print("
+Skewness before transformation:")
+print(train_numeric.skew())
+print("
+Skewness after transformation:")
+print(train_transformed.skew())
+
+"""
+bct = BoxCoxTransformer()
+bct.fit(train_numeric)
+bct.variables_
+from feature_engine.transformation import YeoJohnsonTransformer
+test_numeric = test_t[numeric_columns].copy()
+yjt = YeoJohnsonTransformer()
+yjt.fit(train_numeric)
+train_t[numeric_columns] = yjt.transform(train_numeric)
+test_t[numeric_columns] = yjt.transform(test_numeric)
+bct.lambda_dict_
+
+
+
+================================================
+File: LogCpTransformer.py
+================================================
+"""
+# Variable transformers : LogCpTransformer
+
+
+The `LogCpTransformer()` applies the transformation log(x + C), where C is a positive constant, to the input variable. 
+
+It applies the natural logarithm or the base 10 logarithm, where the natural logarithm is logarithm in base e by setting the param `base="e"` or `base="10"`.
+
+The `LogCpTransformer()`  only works with numerical non-negative values after adding a constant C. If the variable contains a zero or a negative value after adding a constant C, the transformer will return an error.
+
+The transformer can automatically find the constant C to each variable by setting `C="auto"`.
+
+A list of variables can be passed as an argument. Alternatively, the transformer will automatically select and transform all variables of type numeric.
+"""
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import fetch_california_housing
+from feature_engine.transformation import LogCpTransformer
+X, y = fetch_california_housing(return_X_y=True)
+X = pd.DataFrame(X)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+print('Column names:', list(X_train.columns))
+print("""
+Column positions:""")
+for i, col in enumerate(X_train.columns):
+    print(f'{i}: {col}')
+num_feats = [6, 7]
+tf = LogCpTransformer(variables=num_feats, C='auto')
+tf.fit(X_train)
+train_t = tf.transform(X_train)
+test_t = tf.transform(X_test)
+plt.figure(figsize=(12, 12))
+for idx, col in enumerate(num_feats, start=1):
+    plt.subplot(2, 2, round(idx * 1.4))
+    plt.title(f'Untransformed variable {col}')
+    X_train[col].hist()
+    plt.subplot(2, 2, idx * 2)
+    plt.title(f'Transformed variable {col}')
+    train_t[col].hist()
+tf.variables_
+tf.C_
+
+
+
+================================================
+File: LogTransformer.py
+================================================
+"""
+# Variable transformers : LogTransformer
+
+The LogTransformer() applies the natural logarithm or the base 10 logarithm to
+numerical variables. The natural logarithm is logarithm in base e.
+
+The LogTransformer() only works with numerical non-negative values. If the variable
+contains a zero or a negative value the transformer will return an error.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+from feature_engine.transformation import LogTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train['LotArea'].hist(bins=50)
+X_train['GrLivArea'].hist(bins=50)
+lt = LogTransformer(variables=['LotArea', 'GrLivArea'], base='e')
+lt.fit(X_train)
+lt.variables_
+train_t = lt.transform(X_train)
+test_t = lt.transform(X_test)
+train_t['LotArea'].hist(bins=50)
+train_t['GrLivArea'].hist(bins=50)
+train_orig = lt.inverse_transform(train_t)
+test_orig = lt.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+variables = ['LotFrontage', 'LotArea', '1stFlrSF', 'GrLivArea',
+    'TotRmsAbvGrd', 'SalePrice']
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+arbitrary_imputer = ArbitraryNumberImputer(arbitrary_number=2)
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+numeric_columns = train_t.select_dtypes(include=['int64', 'float64']).columns
+train_numeric = train_t[numeric_columns].copy()
+train_numeric
+meaningful_zeros = ['BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath',
+    'BedroomAbvGr', 'KitchenAbvGr', 'Fireplaces', 'GarageCars', 'PoolArea']
+area_columns = ['MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF',
+    'TotalBsmtSF', '2ndFlrSF', 'LowQualFinSF', 'GarageArea', 'WoodDeckSF',
+    'OpenPorchSF', 'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'MiscVal']
+train_shifted = train_numeric.copy()
+for col in area_columns:
+    train_shifted[col] = train_numeric[col] + 1
+variables_to_transform = [col for col in train_numeric.columns if col not in
+    meaningful_zeros]
+lt = LogTransformer(base='10', variables=variables_to_transform)
+lt.fit(train_shifted)
+lt.variables_
+train_t['GrLivArea'].hist(bins=50)
+plt.title('GrLivArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('LotArea')
+train_t.columns
+train_shifted = train_t.copy()
+test_shifted = test_t.copy()
+for col in area_columns:
+    if col in train_t.columns:
+        train_shifted[col] = train_t[col] + 1
+    if col in test_t.columns:
+        test_shifted[col] = test_t[col] + 1
+variables_to_transform = [col for col in train_numeric.columns if col not in
+    meaningful_zeros]
+lt = LogTransformer(base='10', variables=variables_to_transform)
+lt.fit(train_shifted)
+train_transformed = lt.transform(train_shifted)
+test_transformed = lt.transform(test_shifted)
+train_t[variables_to_transform] = train_transformed[variables_to_transform]
+test_t[variables_to_transform] = test_transformed[variables_to_transform]
+train_t['GrLivArea'].hist(bins=50)
+plt.title('GrLivArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('LotArea')
+train_orig = lt.inverse_transform(train_t)
+test_orig = lt.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+
+
+
+================================================
+File: PowerTransformer.py
+================================================
+"""
+# Variable transformers : PowerTransformer
+
+The PowerTransformer() applies power or exponential transformations to
+numerical variables.
+
+The PowerTransformer() works only with numerical variables.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+from feature_engine.transformation import PowerTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+et_transformer = PowerTransformer(variables=['LotArea', 'GrLivArea'], exp=0.5)
+et_transformer.fit(X_train)
+train_t = et_transformer.transform(X_train)
+test_t = et_transformer.transform(X_test)
+X_train['GrLivArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('GrLivArea')
+train_t['GrLivArea'].hist(bins=50)
+plt.title('Transformed variable')
+plt.xlabel('GrLivArea')
+X_train['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_orig = et_transformer.inverse_transform(train_t)
+test_orig = et_transformer.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+arbitrary_imputer = ArbitraryNumberImputer()
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+et = PowerTransformer(exp=2, variables=None)
+et.fit(train_t)
+et.variables_
+train_t['GrLivArea'].hist(bins=50)
+train_t = et.transform(train_t)
+test_t = et.transform(test_t)
+train_t['GrLivArea'].hist(bins=50)
+train_orig = et_transformer.inverse_transform(train_t)
+test_orig = et_transformer.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+
+
+
+================================================
+File: ReciprocalTransformer.py
+================================================
+"""
+# Variable transformers : ReciprocalTransformer
+
+The ReciprocalTransformer() applies the reciprocal transformation 1 / x
+to numerical variables.
+
+The ReciprocalTransformer() only works with numerical variables with non-zero
+values. If a variable contains the value  the transformer will raise an error.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+from feature_engine.transformation import ReciprocalTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+rt = ReciprocalTransformer(variables=['LotArea', 'GrLivArea'])
+rt.fit(X_train)
+rt.variables_
+train_t = rt.transform(X_train)
+test_t = rt.transform(X_test)
+X_train['GrLivArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('GrLivArea')
+train_t['GrLivArea'].hist(bins=50)
+plt.title('Transformed variable')
+plt.xlabel('GrLivArea')
+X_train['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_orig = rt.inverse_transform(train_t)
+test_orig = rt.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+variables = ['LotFrontage', 'LotArea', '1stFlrSF', 'GrLivArea',
+    'TotRmsAbvGrd', 'SalePrice']
+train_df = pd.read_csv('../data/house-prices/train.csv', usecols=['Id'] +
+    variables)
+test_df = pd.read_csv('../data/house-prices/test.csv', usecols=['Id'] +
+    variables[:-1])
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+arbitrary_imputer = ArbitraryNumberImputer(arbitrary_number=2)
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+rt = ReciprocalTransformer()
+rt.fit(train_t)
+rt.variables_
+train_t['GrLivArea'].hist(bins=50)
+train_t['LotArea'].hist(bins=50)
+train_t = rt.transform(train_t)
+test_t = rt.transform(test_t)
+train_t['GrLivArea'].hist(bins=50)
+train_t['LotArea'].hist(bins=50)
+train_orig = rt.inverse_transform(train_t)
+test_orig = rt.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+
+
+
+================================================
+File: YeoJohnsonTransformer.py
+================================================
+"""
+# Variable transformers : YeoJohnsonTransformer
+
+The YeoJohnsonTransformer() applies the Yeo-Johnson transformation to the
+numerical variables.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+from feature_engine.transformation import YeoJohnsonTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+yjt = YeoJohnsonTransformer(variables=['LotArea', 'GrLivArea'])
+yjt.fit(X_train)
+yjt.lambda_dict_
+train_t = yjt.transform(X_train)
+test_t = yjt.transform(X_test)
+X_train['GrLivArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('GrLivArea')
+train_t['GrLivArea'].hist(bins=50)
+plt.title('Transformed variable')
+plt.xlabel('GrLivArea')
+X_train['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+arbitrary_imputer = ArbitraryNumberImputer(arbitrary_number=2)
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+yjt = YeoJohnsonTransformer()
+yjt.fit(train_t)
+yjt.variables_
+yjt.lambda_dict_
+train_t = yjt.transform(train_t)
+test_t = yjt.transform(test_t)
+
+

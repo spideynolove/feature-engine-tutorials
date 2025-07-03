@@ -1,0 +1,2264 @@
+...
+
+================================================
+File: outliers.txt
+================================================
+Directory structure:
+└── outliers/
+    ├── ArbitraryOutlierCapper.py
+    ├── OutlierTrimmer.py
+    └── Winsorizer.py
+
+================================================
+File: ArbitraryOutlierCapper.py
+================================================
+"""
+# ArbitraryOutlierCapper
+The ArbitraryOutlierCapper() caps the maximum or minimum values of a variable
+at an arbitrary value indicated by the user.
+
+The user must provide the maximum or minimum values that will be used <br>
+to cap each variable in a dictionary {feature : capping_value}
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.outliers import ArbitraryOutlierCapper
+
+
+def load_titanic(filepath='../data/titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['embarked'].fillna('C', inplace=True)
+    data['fare'] = data['fare'].astype('float')
+    data['fare'].fillna(data['fare'].median(), inplace=True)
+    data['age'] = data['age'].astype('float')
+    data['age'].fillna(data['age'].median(), inplace=True)
+    data.drop(['name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+def plot_hist(data, col):
+    plt.figure(figsize=(8, 5))
+    plt.hist(data[col], bins=30)
+    plt.title('Distribution of ' + col)
+    return plt.show()
+
+
+data = load_titanic()
+data.sample(5)
+X_train, X_test, y_train, y_test = train_test_split(data.drop('survived',
+    axis=1), data['survived'], test_size=0.3, random_state=0)
+print('train data:', X_train.shape)
+print('test data:', X_test.shape)
+plot_hist(data, 'age')
+plot_hist(data, 'fare')
+print('Max age:', data.age.max())
+print('Max fare:', data.fare.max())
+print('Min age:', data.age.min())
+print('Min fare:', data.fare.min())
+"""Parameters
+----------
+max_capping_dict : dictionary, default=None
+    Dictionary containing the user specified capping values for the right tail of
+    the distribution of each variable (maximum values).
+
+min_capping_dict : dictionary, default=None
+    Dictionary containing user specified capping values for the eft tail of the
+    distribution of each variable (minimum values).
+
+missing_values : string, default='raise'
+    Indicates if missing values should be ignored or raised. If
+    `missing_values='raise'` the transformer will return an error if the
+    training or the datasets to transform contain missing values.
+"""
+capper = ArbitraryOutlierCapper(max_capping_dict={'age': 50, 'fare': 150},
+    min_capping_dict=None)
+capper.fit(X_train)
+print('Maximum caps:', capper.right_tail_caps_)
+capper.left_tail_caps_
+train_t = capper.transform(X_train)
+test_t = capper.transform(X_test)
+print('Max age after capping:', train_t.age.max())
+print('Max fare after capping:', train_t.fare.max())
+capper = ArbitraryOutlierCapper(max_capping_dict=None, min_capping_dict={
+    'age': 10, 'fare': 100})
+capper.fit(X_train)
+capper.right_tail_caps_
+capper.left_tail_caps_
+train_t = capper.transform(X_train)
+test_t = capper.transform(X_test)
+print('Min age:', train_t.age.min())
+print('Min fare:', train_t.fare.min())
+capper = ArbitraryOutlierCapper(min_capping_dict={'age': 5, 'fare': 5},
+    max_capping_dict={'age': 60, 'fare': 150})
+capper.fit(X_train)
+capper.right_tail_caps_
+capper.left_tail_caps_
+train_t = capper.transform(X_train)
+test_t = capper.transform(X_test)
+print('Max age:', train_t.age.max())
+print('Max fare:', train_t.fare.max())
+print('Min age:', train_t.age.min())
+print('Min fare:', train_t.fare.min())
+plot_hist(train_t, 'age')
+plot_hist(train_t, 'fare')
+
+
+
+================================================
+File: OutlierTrimmer.py
+================================================
+"""
+# OutlierTrimmer
+The OutlierTrimmer() removes observations with outliers from the dataset.
+
+It works only with numerical variables. A list of variables can be indicated.
+Alternatively, the OutlierTrimmer() will select all numerical variables.
+
+The OutlierTrimmer() first calculates the maximum and /or minimum values
+beyond which a value will be considered an outlier, and thus removed.
+
+Limits are determined using:
+
+- a Gaussian approximation
+- the inter-quantile range proximity rule
+- percentiles.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.outliers import OutlierTrimmer
+
+
+def load_titanic(filepath='../data/titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['embarked'].fillna('C', inplace=True)
+    data['fare'] = data['fare'].astype('float')
+    data['fare'].fillna(data['fare'].median(), inplace=True)
+    data['age'] = data['age'].astype('float')
+    data['age'].fillna(data['age'].median(), inplace=True)
+    data.drop(['name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+def plot_hist(data, col):
+    plt.figure(figsize=(8, 5))
+    plt.hist(data[col], bins=30)
+    plt.title('Distribution of ' + col)
+    return plt.show()
+
+
+data = load_titanic()
+data.sample(5)
+X_train, X_test, y_train, y_test = train_test_split(data.drop('survived',
+    axis=1), data['survived'], test_size=0.3, random_state=0)
+print('train data shape before removing outliers:', X_train.shape)
+print('test data shape before removing outliers:', X_test.shape)
+print('Max age:', data.age.max())
+print('Max fare:', data.fare.max())
+print('Min age:', data.age.min())
+print('Min fare:', data.fare.min())
+plot_hist(data, 'age')
+plot_hist(data, 'fare')
+"""Parameters
+----------
+
+capping_method : str, default=gaussian
+    Desired capping method. Can take 'gaussian', 'iqr' or 'quantiles'.
+    
+tail : str, default=right
+    Whether to cap outliers on the right, left or both tails of the distribution.
+    Can take 'left', 'right' or 'both'.
+
+fold: int or float, default=3
+    How far out to to place the capping values. The number that will multiply
+    the std or IQR to calculate the capping values.
+
+variables : list, default=None
+
+missing_values: string, default='raise'
+    Indicates if missing values should be ignored or raised."""
+trimmer = OutlierTrimmer(capping_method='gaussian', tail='right', fold=3,
+    variables=['age', 'fare'])
+trimmer.fit(X_train)
+trimmer.right_tail_caps_
+trimmer.left_tail_caps_
+train_t = trimmer.transform(X_train)
+test_t = trimmer.transform(X_test)
+print('Max age:', train_t.age.max())
+print('Max fare:', train_t.fare.max())
+print('train data shape after removing outliers:', train_t.shape)
+print(f'{X_train.shape[0] - train_t.shape[0]} observations are removed\n')
+print('test data shape after removing outliers:', test_t.shape)
+print(f'{X_test.shape[0] - test_t.shape[0]} observations are removed')
+trimmer = OutlierTrimmer(capping_method='gaussian', tail='both', fold=2,
+    variables=['fare', 'age'])
+trimmer.fit(X_train)
+print('Minimum caps :', trimmer.left_tail_caps_)
+print('Maximum caps :', trimmer.right_tail_caps_)
+train_t = trimmer.transform(X_train)
+test_t = trimmer.transform(X_test)
+print('train data shape after removing outliers:', train_t.shape)
+print(f'{X_train.shape[0] - train_t.shape[0]} observations are removed\n')
+print('test data shape after removing outliers:', test_t.shape)
+print(f'{X_test.shape[0] - test_t.shape[0]} observations are removed')
+trimmer = OutlierTrimmer(capping_method='iqr', tail='both', variables=[
+    'age', 'fare'])
+trimmer.fit(X_train)
+print('Minimum caps :', trimmer.left_tail_caps_)
+print('Maximum caps :', trimmer.right_tail_caps_)
+train_t = trimmer.transform(X_train)
+test_t = trimmer.transform(X_test)
+print('train data shape after removing outliers:', train_t.shape)
+print(f'{X_train.shape[0] - train_t.shape[0]} observations are removed\n')
+print('test data shape after removing outliers:', test_t.shape)
+print(f'{X_test.shape[0] - test_t.shape[0]} observations are removed')
+trimmer = OutlierTrimmer(capping_method='quantiles', tail='both', fold=0.02,
+    variables=['age', 'fare'])
+trimmer.fit(X_train)
+print('Minimum caps :', trimmer.left_tail_caps_)
+print('Maximum caps :', trimmer.right_tail_caps_)
+train_t = trimmer.transform(X_train)
+test_t = trimmer.transform(X_test)
+print('train data shape after removing outliers:', train_t.shape)
+print(f'{X_train.shape[0] - train_t.shape[0]} observations are removed\n')
+print('test data shape after removing outliers:', test_t.shape)
+print(f'{X_test.shape[0] - test_t.shape[0]} observations are removed')
+plot_hist(train_t, 'age')
+plot_hist(train_t, 'fare')
+
+
+
+================================================
+File: Winsorizer.py
+================================================
+"""
+# Winsorizer
+Winzorizer finds maximum and minimum values following a Gaussian or skewed distribution as indicated. It can also cap the right, left or both ends of the distribution.
+
+The Winsorizer() caps maximum and / or minimum values of a variable.
+
+The Winsorizer() works only with numerical variables. A list of variables can
+be indicated. Alternatively, the Winsorizer() will select all numerical
+variables in the train set.
+
+The Winsorizer() first calculates the capping values at the end of the
+distribution. The values are determined using:
+
+- a Gaussian approximation,
+- the inter-quantile range proximity rule (IQR)
+- percentiles.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.outliers import Winsorizer
+
+
+def load_titanic(filepath='../data/titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['embarked'].fillna('C', inplace=True)
+    data['fare'] = data['fare'].astype('float')
+    data['fare'].fillna(data['fare'].median(), inplace=True)
+    data['age'] = data['age'].astype('float')
+    data['age'].fillna(data['age'].median(), inplace=True)
+    data.drop(['name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+def plot_hist(data, col):
+    plt.figure(figsize=(8, 5))
+    plt.hist(data[col], bins=30)
+    plt.title('Distribution of ' + col)
+    return plt.show()
+
+
+data = load_titanic()
+data.sample(5)
+X_train, X_test, y_train, y_test = train_test_split(data.drop('survived',
+    axis=1), data['survived'], test_size=0.3, random_state=0)
+print('train data:', X_train.shape)
+print('test data:', X_test.shape)
+print('Max age:', data.age.max())
+print('Max fare:', data.fare.max())
+plot_hist(data, 'age')
+plot_hist(data, 'fare')
+"""Parameters
+----------
+capping_method : str, default=gaussian
+
+    Desired capping method. Can take 'gaussian', 'iqr' or 'quantiles'.
+
+tail : str, default=right
+
+    Whether to cap outliers on the right, left or both tails of the distribution.
+    Can take 'left', 'right' or 'both'.
+
+fold: int or float, default=3
+
+    How far out to to place the capping values. The number that will multiply
+    the std or IQR to calculate the capping values. Recommended values, 2
+    or 3 for the gaussian approximation, or 1.5 or 3 for the IQR proximity
+    rule.
+
+variables: list, default=None
+  
+missing_values: string, default='raise'
+
+    Indicates if missing values should be ignored or raised.
+"""
+capper = Winsorizer(capping_method='gaussian', tail='right', fold=3,
+    variables=['age', 'fare'])
+capper.fit(X_train)
+capper.right_tail_caps_
+capper.left_tail_caps_
+plot_hist(capper.transform(X_train), 'age')
+train_t = capper.transform(X_train)
+test_t = capper.transform(X_test)
+train_t.age.max(), train_t.fare.max()
+winsor = Winsorizer(capping_method='gaussian', tail='both', fold=2,
+    variables='fare')
+winsor.fit(X_train)
+print('Minimum caps :', winsor.left_tail_caps_)
+print('Maximum caps :', winsor.right_tail_caps_)
+plot_hist(winsor.transform(X_train), 'fare')
+train_t = winsor.transform(X_train)
+test_t = winsor.transform(X_test)
+print('Max fare:', train_t.fare.max())
+print('Min fare:', train_t.fare.min())
+winsor = Winsorizer(capping_method='iqr', tail='both', variables=['age',
+    'fare'])
+winsor.fit(X_train)
+winsor.left_tail_caps_
+winsor.right_tail_caps_
+train_t = winsor.transform(X_train)
+test_t = winsor.transform(X_test)
+print('Max fare:', train_t.fare.max())
+print('Min fare', train_t.fare.min())
+winsor = Winsorizer(capping_method='quantiles', tail='both', fold=0.02,
+    variables=['age', 'fare'])
+winsor.fit(X_train)
+print('Minimum caps :', winsor.left_tail_caps_)
+print('Maximum caps :', winsor.right_tail_caps_)
+train_t = winsor.transform(X_train)
+test_t = winsor.transform(X_test)
+print('Max age:', train_t.age.max())
+print('Min age', train_t.age.min())
+plot_hist(train_t, 'age')
+
+
+
+
+
+================================================
+File: pipelines.txt
+================================================
+Directory structure:
+└── pipelines/
+    ├── adult-income-with-feature-engine.py
+    ├── create-new-features-with-feature-engine.py
+    └── predict-house-price-with-feature-engine.py
+
+================================================
+File: adult-income-with-feature-engine.py
+================================================
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.preprocessing import StandardScaler
+from feature_engine import imputation as mdi
+from feature_engine import discretisation as dsc
+from feature_engine import encoding as ce
+filename = '../data/adult/adult.data'
+col_names = ['age', 'workclass', 'fnlwgt', 'education', 'education-num',
+    'marital-status', 'occupation', 'relationship', 'race', 'sex',
+    'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
+    'income']
+data = pd.read_csv(filename, sep=',', names=col_names)
+print(data.shape)
+data.head()
+data.info()
+categorical = [var for var in data.columns if data[var].dtype == 'O']
+discrete = [var for var in data.columns if data[var].dtype != 'O']
+categorical
+discrete
+data[discrete].hist(bins=30, figsize=(15, 15))
+plt.show()
+for var in categorical:
+    sns.catplot(data=data, y=var, hue=var, kind='count', palette='ch:.25',
+        legend=False)
+data['income'] = data.income.apply(lambda x: x.replace('<=50K', '0'))
+data['income'] = data.income.apply(lambda x: x.replace('>50K', '1'))
+data['income'] = data.income.apply(lambda x: int(x))
+data.head()
+X_train, X_test, y_train, y_test = train_test_split(data.drop(['income'],
+    axis=1), data['income'], test_size=0.1, random_state=42)
+X_train.shape, X_test.shape
+categorical.pop()
+income_pipe = Pipeline([('rare_label_enc', ce.RareLabelEncoder(tol=0.1,
+    n_categories=1)), ('categorical_enc', ce.DecisionTreeEncoder(regression
+    =False, param_grid={'max_depth': [1, 2, 3]}, random_state=2909,
+    variables=categorical)), ('discretisation', dsc.DecisionTreeDiscretiser
+    (regression=False, param_grid={'max_depth': [1, 2, 3]}, random_state=
+    2909, variables=discrete)), ('gbm', GradientBoostingClassifier(
+    random_state=42))])
+income_pipe.fit(X_train, y_train)
+X_train_preds = income_pipe.predict(X_train)
+X_test_preds = income_pipe.predict(X_test)
+print('train accuracy: {}'.format(accuracy_score(y_train, X_train_preds)))
+print()
+print('test accuracy: {}'.format(accuracy_score(y_test, X_test_preds)))
+
+
+
+================================================
+File: create-new-features-with-feature-engine.py
+================================================
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split, cross_validate
+from sklearn.pipeline import Pipeline
+from feature_engine.creation import RelativeFeatures, MathFeatures
+data = pd.read_csv('../data/winequality-red.csv', sep=';')
+print(data.shape)
+data.head()
+(data['quality'].value_counts() / len(data)).sort_index().plot.bar()
+plt.title('Wine Quality')
+plt.ylabel('Percentage of wines in the data')
+plt.xlabel('Wine Quality')
+plt.show()
+data['quality'] = np.where(data['quality'] <= 6, 0, 1)
+(data['quality'].value_counts() / len(data)).plot.bar()
+plt.title('Wine Quality')
+plt.ylabel('Percentage of wines in the data')
+plt.xlabel('Wine Quality')
+plt.show()
+data.hist(bins=50, figsize=(10, 10))
+plt.show()
+g = sns.PairGrid(data, x_vars=['quality'], y_vars=data.columns[0:-1])
+g.map(sns.barplot)
+plt.show()
+df = data.melt(id_vars=['quality'])
+cols = df.variable.unique()
+g = sns.axisgrid.FacetGrid(df[df.variable.isin(cols[0:6])], col='variable',
+    sharey=False)
+g.map(sns.boxplot, 'quality', 'value')
+plt.show()
+g = sns.axisgrid.FacetGrid(df[df.variable.isin(cols[6:])], col='variable',
+    sharey=False)
+g.map(sns.boxplot, 'quality', 'value')
+plt.show()
+data.head()
+plt.scatter(data['citric acid'], data['pH'], c=data['quality'])
+plt.xlabel('Citric acid')
+plt.ylabel('pH')
+plt.show()
+plt.scatter(data['sulphates'], data['pH'], c=data['quality'])
+plt.xlabel('sulphates')
+plt.ylabel('pH')
+plt.show()
+plt.scatter(data['sulphates'], data['citric acid'], c=data['quality'])
+plt.xlabel('sulphates')
+plt.ylabel('citric acid')
+plt.show()
+g = sns.PairGrid(data, y_vars=['density'], x_vars=['chlorides', 'sulphates',
+    'residual sugar', 'alcohol'])
+g.map(sns.regplot)
+plt.show()
+combinator = MathFeatures(variables=['fixed acidity', 'volatile acidity'],
+    func=['sum', 'mean'], new_variables_names=['total_acidity',
+    'average_acidity'])
+data = combinator.fit_transform(data)
+data.head()
+combinator = MathFeatures(variables=['chlorides', 'sulphates'], func=['sum',
+    'mean'], new_variables_names=['total_minerals', 'average_minerals'])
+data = combinator.fit_transform(data)
+data.head()
+combinator = RelativeFeatures(variables=['total sulfur dioxide'], reference
+    =['free sulfur dioxide'], func=['sub'])
+data = combinator.fit_transform(data)
+data.head()
+combinator = RelativeFeatures(variables=['free sulfur dioxide'], reference=
+    ['total sulfur dioxide'], func=['div'])
+data = combinator.fit_transform(data)
+data.head()
+combinator = RelativeFeatures(variables=['sulphates'], reference=[
+    'free sulfur dioxide'], func=['div'])
+data = combinator.fit_transform(data)
+data.head()
+data.columns
+new_vars = ['total_acidity', 'average_acidity', 'total_minerals',
+    'average_minerals', 'total sulfur dioxide_sub_free sulfur dioxide',
+    'free sulfur dioxide_div_total sulfur dioxide',
+    'free sulfur dioxide_div_total sulfur dioxide']
+df = data[new_vars + ['quality']].melt(id_vars=['quality'])
+cols = df.variable.unique()
+g = sns.axisgrid.FacetGrid(df[df.variable.isin(cols)], col='variable',
+    sharey=False)
+g.map(sns.boxplot, 'quality', 'value')
+plt.show()
+data = pd.read_csv('../data/winequality-red.csv', sep=';')
+data['quality'] = np.where(data['quality'] <= 6, 0, 1)
+X_train, X_test, y_train, y_test = train_test_split(data.drop(labels=[
+    'quality'], axis=1), data['quality'], test_size=0.2, random_state=0)
+X_train.shape, X_test.shape
+pipe = Pipeline([('acidity', MathFeatures(variables=['fixed acidity',
+    'volatile acidity'], func=['sum', 'mean'], new_variables_names=[
+    'total_acidity', 'average_acidity'])), ('total_minerals', MathFeatures(
+    variables=['chlorides', 'sulphates'], func=['sum', 'mean'],
+    new_variables_names=['total_minerals', 'average_minearals'])), (
+    'non_free_sulfur', RelativeFeatures(variables=['total sulfur dioxide'],
+    reference=['free sulfur dioxide'], func=['sub'])), ('perc_free_sulfur',
+    RelativeFeatures(variables=['free sulfur dioxide'], reference=[
+    'total sulfur dioxide'], func=['div'])), ('perc_salt_sulfur',
+    RelativeFeatures(variables=['sulphates'], reference=[
+    'free sulfur dioxide'], func=['div'])), ('gbm',
+    GradientBoostingClassifier(n_estimators=10, max_depth=2, random_state=1))])
+pipe.fit(X_train, y_train)
+pred = pipe.predict_proba(X_train)
+print('Train roc-auc: {}'.format(roc_auc_score(y_train, pred[:, 1])))
+pred = pipe.predict_proba(X_test)
+print('Test roc-auc: {}'.format(roc_auc_score(y_test, pred[:, 1])))
+new_vars = ['total_acidity', 'average_acidity', 'total_minerals',
+    'average_minearals', 'non_free_sulfur_dioxide',
+    'percentage_free_sulfur', 'percentage_salt_sulfur']
+importance = pd.Series(pipe.named_steps['gbm'].feature_importances_)
+importance.index = list(X_train.columns) + new_vars
+importance.sort_values(ascending=False).plot.bar(figsize=(15, 5))
+plt.ylabel('Feature importance')
+plt.show()
+
+
+
+================================================
+File: predict-house-price-with-feature-engine.py
+================================================
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import Lasso
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_squared_error, r2_score, log_loss
+from sklearn.preprocessing import StandardScaler
+from feature_engine import imputation as mdi
+from feature_engine import discretisation as dsc
+from feature_engine import encoding as ce
+data = pd.read_csv('../data/house-prices/train.csv')
+categorical = [var for var in data.columns if data[var].dtype == 'O']
+year_vars = [var for var in data.columns if 'Yr' in var or 'Year' in var]
+discrete = [var for var in data.columns if data[var].dtype != 'O' and len(
+    data[var].unique()) < 20 and var not in year_vars]
+numerical = [var for var in data.columns if data[var].dtype != 'O' if var
+     not in discrete and var not in ['Id', 'SalePrice'] and var not in
+    year_vars]
+sns.pairplot(data=data, y_vars=['SalePrice'], x_vars=['LotFrontage',
+    'LotArea', 'MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2'])
+sns.pairplot(data=data, y_vars=['SalePrice'], x_vars=['BsmtUnfSF',
+    'TotalBsmtSF', '1stFlrSF', '2ndFlrSF', 'LowQualFinSF'])
+sns.pairplot(data=data, y_vars=['SalePrice'], x_vars=['GrLivArea',
+    'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch'])
+sns.pairplot(data=data, y_vars=['SalePrice'], x_vars=['3SsnPorch',
+    'ScreenPorch', 'MiscVal'])
+data[discrete] = data[discrete].astype('O')
+X_train, X_test, y_train, y_test = train_test_split(data.drop(['Id',
+    'SalePrice'], axis=1), data['SalePrice'], test_size=0.1, random_state=0)
+X_train.shape, X_test.shape
+
+
+def elapsed_years(df, var):
+    df[var] = df['YrSold'] - df[var]
+    return df
+
+
+for var in ['YearBuilt', 'YearRemodAdd', 'GarageYrBlt']:
+    X_train = elapsed_years(X_train, var)
+    X_test = elapsed_years(X_test, var)
+X_train.drop('YrSold', axis=1, inplace=True)
+X_test.drop('YrSold', axis=1, inplace=True)
+house_pipe = Pipeline([('missing_ind', mdi.AddMissingIndicator(missing_only
+    =True)), ('imputer_num', mdi.MeanMedianImputer(imputation_method=
+    'median')), ('imputer_cat', mdi.CategoricalImputer(return_object=True)),
+    ('rare_label_enc', ce.RareLabelEncoder(tol=0.1, n_categories=1)), (
+    'categorical_enc', ce.DecisionTreeEncoder(param_grid={'max_depth': [1, 
+    2, 3]}, random_state=2909)), ('discretisation', dsc.
+    DecisionTreeDiscretiser(param_grid={'max_depth': [1, 2, 3]},
+    random_state=2909, variables=numerical)), ('scaler', StandardScaler()),
+    ('lasso', Lasso(alpha=100, random_state=0, max_iter=1000))])
+house_pipe.fit(X_train, y_train)
+X_train_preds = house_pipe.predict(X_train)
+X_test_preds = house_pipe.predict(X_test)
+print('train mse: {}'.format(mean_squared_error(y_train, X_train_preds,
+    squared=True)))
+print('train rmse: {}'.format(mean_squared_error(y_train, X_train_preds,
+    squared=False)))
+print('train r2: {}'.format(r2_score(y_train, X_train_preds)))
+print()
+print('test mse: {}'.format(mean_squared_error(y_test, X_test_preds,
+    squared=True)))
+print('test rmse: {}'.format(mean_squared_error(y_test, X_test_preds,
+    squared=False)))
+print('test r2: {}'.format(r2_score(y_test, X_test_preds)))
+
+
+
+
+
+================================================
+File: preprocessing.txt
+================================================
+Directory structure:
+└── preprocessing/
+    └── MatchVariables.py
+
+================================================
+File: MatchVariables.py
+================================================
+# Generated from: MatchVariables.ipynb
+
+# # MatchVariables
+#
+#
+# MatchVariables() ensures that the columns in the test set are identical to those
+# in the train set.
+#
+# If the test set contains additional columns, they are dropped. Alternatively, if the
+# test set lacks columns that were present in the train set, they will be added with a
+# value determined by the user, for example np.nan.
+
+
+import numpy as np
+import pandas as pd
+
+from feature_engine.preprocessing import MatchVariables
+
+
+def load_titanic(train_path='../data/titanic-3/train.csv', test_path='../data/titanic-3/test.csv'):
+    # Read both train and test datasets
+    train = pd.read_csv(train_path)
+    test = pd.read_csv(test_path)
+    
+    # Common preprocessing for both datasets
+    def preprocess_df(df):
+        df = df.replace('?', np.nan)
+        df['cabin'] = df['cabin'].astype(str).str[0]
+        df['pclass'] = df['pclass'].astype('O')
+        df['age'] = df['age'].astype('float')
+        df['fare'] = df['fare'].astype('float')
+        df['embarked'].fillna('C', inplace=True)
+        df.drop(
+            labels=['name', 'ticket'],
+            axis=1, inplace=True,
+        )
+        return df
+    
+    # Apply preprocessing to both datasets
+    train = preprocess_df(train)
+    test = preprocess_df(test)
+    
+    return train, test
+
+
+train, test = load_titanic()
+print("Train shape:", train.shape)
+print("Test shape:", test.shape)
+
+
+# set up the transformer
+match_cols = MatchVariables(missing_values="ignore")
+
+# learn the variables in the train set
+match_cols.fit(train)
+
+
+# the transformer stores the input variables
+# match_cols.input_features_
+match_cols.feature_names_in_
+
+
+# ## 1 - Some columns are missing in the test set
+
+
+match_cols
+
+
+# Let's drop some columns in the test set for the demo
+test_t = test.drop(["sex", "age"], axis=1)
+
+
+# test.columns
+test_t.shape
+
+
+test_t.head()
+
+
+# the transformer adds the columns back
+test_tt = match_cols.transform(test_t)
+
+print()
+test_tt.head()
+
+
+# Note how the missing columns were added back to the transformed test set, with
+# missing values, in the position (i.e., order) in which they were in the train set.
+#
+# Similarly, if the test set contained additional columns, those would be removed:
+
+
+# ## Test set contains variables not present in train set
+
+
+test_t.loc[:, "new_col1"] = 5
+test_t.loc[:, "new_col2"] = "test"
+
+test_t.head()
+
+
+# set up the transformer with different
+# fill value
+match_cols = MatchVariables(
+    fill_value=0, missing_values="ignore",
+)
+
+# learn the variables in the train set
+match_cols.fit(train)
+
+
+test_tt = match_cols.transform(test_t)
+
+print()
+test_tt.head()
+
+
+# Note how the columns that were present in the test set but not in train set were dropped. And now, the missing variables were added back into the dataset with the value 0.
+
+
+
+
+
+
+================================================
+File: selection.txt
+================================================
+Directory structure:
+└── selection/
+    ├── Drop-Arbitrary-Features.py
+    ├── Drop-Constant-and-QuasiConstant-Features.py
+    ├── Drop-Correlated-Features.py
+    ├── Drop-Duplicated-Features.py
+    ├── Drop-High-PSI-Features.py
+    ├── Recursive-Feature-Addition.py
+    ├── Recursive-Feature-Elimination.py
+    ├── Select-by-Feature-Shuffling.py
+    ├── Select-by-MinimumRedundance-MaximumRelevante.py
+    ├── Select-by-Single-Feature-Performance.py
+    ├── Select-by-Target-Mean-Encoding.py
+    ├── Select-Information-Value.py
+    └── Smart-Correlation-Selection.py
+
+================================================
+File: Drop-Arbitrary-Features.py
+================================================
+
+
+
+================================================
+File: Drop-Constant-and-QuasiConstant-Features.py
+================================================
+
+
+
+================================================
+File: Drop-Correlated-Features.py
+================================================
+import dcor
+import pandas as pd
+import warnings
+from sklearn.datasets import make_classification
+from feature_engine.selection import DropCorrelatedFeatures
+warnings.filterwarnings('ignore')
+X, _ = make_classification(n_samples=1000, n_features=12, n_redundant=6,
+    n_clusters_per_class=1, weights=[0.5], class_sep=2, random_state=1)
+colnames = [('var_' + str(i)) for i in range(12)]
+X = pd.DataFrame(X, columns=colnames)
+X
+dcor_tr = DropCorrelatedFeatures(variables=None, method=dcor.
+    distance_correlation, threshold=0.8)
+X_dcor = dcor_tr.fit_transform(X)
+X_dcor
+from sklearn.feature_selection import mutual_info_regression
+
+
+def custom_mi(x, y):
+    x = x.reshape(-1, 1)
+    y = y.reshape(-1, 1)
+    return mutual_info_regression(x, y)[0]
+
+
+mi_tr = DropCorrelatedFeatures(variables=None, method=custom_mi, threshold=0.8)
+X_mi = mi_tr.fit_transform(X)
+X_mi
+
+
+
+================================================
+File: Drop-Duplicated-Features.py
+================================================
+
+
+
+================================================
+File: Drop-High-PSI-Features.py
+================================================
+"""
+# Drop Features with High PSI Value
+
+The **DropHighPSIFeatures** selects features based on the Population Stability Index (PSI). The higher this value, the more unstable a feature. Unstable in this case means that there is a significant change in the distribution of the feature in the groups being compared.
+
+To determine the PSI of a feature, the DropHighPSIFeatures takes a dataframe and splits it in 2 based on a reference variable. This reference variable can be numerical, categorical or date. If the variable is numerical, the split ensures a certain proportion of observations in each sub-dataframe. If the variable is categorical, we can split the data based on the categories. And if the variable is a date, we can split the data based on dates.
+"""
+from datetime import date
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from feature_engine.selection import DropHighPSIFeatures
+data = pd.read_csv('../data/credit+approval/crx.data', header=None)
+data.columns = [('A' + str(s)) for s in range(1, 17)]
+data = data.replace('?', np.nan)
+data['A2'] = data['A2'].astype('float')
+data['A14'] = data['A14'].astype('float')
+data['A16'] = data['A16'].map({'+': 1, '-': 0})
+data.head()
+data['A13'] = data['A13'].map({'g': 'portfolio_1', 's': 'portfolio_2', 'p':
+    'portfolio_3'})
+data['A13'].fillna('Unknown', inplace=True)
+data['A12'] = data['A12'].map({'f': 'wholesale', 't': 'retail'})
+data['A12'].fillna('Missing', inplace=True)
+data['A6'].fillna('Missing', inplace=True)
+labels = {'w': '20-25', 'q': '25-30', 'm': '30-35', 'r': '35-40', 'cc':
+    '40-45', 'k': '45-50', 'c': '50-55', 'd': '55-60', 'x': '60-65', 'i':
+    '65-70', 'e': '70-75', 'aa': '75-80', 'ff': '85-90', 'j': 'Unknown',
+    'Missing': 'Missing'}
+data['A6'] = data['A6'].map(labels)
+data['date'] = pd.date_range(start='1/1/2018', periods=len(data))
+data.head()
+vars_cat = data.select_dtypes(include='O').columns.to_list()
+vars_cat
+for var in vars_cat:
+    data[var].value_counts(normalize=True).plot.bar()
+    plt.title(var)
+    plt.ylabel('% observations')
+    plt.show()
+vars_num = data.select_dtypes(exclude='O').columns.to_list()
+vars_num.remove('A16')
+vars_num.remove('date')
+vars_num
+for var in vars_num:
+    data[var].hist(bins=50)
+    plt.title(var)
+    plt.ylabel('Number observations')
+    plt.show()
+X_train, X_test, y_train, y_test = train_test_split(data[vars_cat +
+    vars_num], data['A16'], test_size=0.1, random_state=42)
+transformer = DropHighPSIFeatures(split_frac=0.6, split_col=None, strategy=
+    'equal_frequency', threshold=0.1, variables=vars_num, missing_values=
+    'ignore')
+transformer.fit(X_train)
+transformer.cut_off_
+transformer.threshold
+transformer.psi_values_
+transformer.features_to_drop_
+tmp = X_train.index <= transformer.cut_off_
+sns.ecdfplot(data=X_train, x='A8', hue=tmp)
+plt.title('A8 - moderate PSI')
+sns.ecdfplot(data=X_train, x='A2', hue=tmp)
+plt.title('A2 - low PSI')
+X_train.shape, X_test.shape
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+X_train.shape, X_test.shape
+X_train, X_test, y_train, y_test = train_test_split(data[vars_cat +
+    vars_num], data['A16'], test_size=0.1, random_state=42)
+transformer = DropHighPSIFeatures(split_frac=0.5, split_col='A6', strategy=
+    'equal_frequency', bins=8, threshold=0.1, variables=None,
+    missing_values='ignore')
+transformer.fit(X_train)
+transformer.variables_
+transformer.cut_off_
+transformer.psi_values_
+transformer.features_to_drop_
+tmp = X_train['A6'] <= transformer.cut_off_
+sns.ecdfplot(data=X_train, x='A8', hue=tmp)
+plt.title('A8 - low PSI')
+sns.ecdfplot(data=X_train, x='A15', hue=tmp)
+plt.title('A15 - low PSI')
+X_train[tmp]['A6'].unique()
+X_train[tmp]['A6'].nunique()
+len(X_train[tmp]['A6']) / len(X_train)
+X_train[~tmp]['A6'].unique()
+X_train[~tmp]['A6'].nunique()
+len(X_train[~tmp]['A6']) / len(X_train)
+X_train.shape, X_test.shape
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+X_train.shape, X_test.shape
+X_train, X_test, y_train, y_test = train_test_split(data[vars_cat +
+    vars_num], data['A16'], test_size=0.1, random_state=42)
+transformer = DropHighPSIFeatures(split_frac=0.5, split_distinct=True,
+    split_col='A6', strategy='equal_frequency', bins=5, threshold=0.1,
+    missing_values='ignore')
+transformer.fit(X_train)
+transformer.cut_off_
+transformer.psi_values_
+transformer.features_to_drop_
+tmp = X_train['A6'] <= transformer.cut_off_
+sns.ecdfplot(data=X_train, x='A8', hue=tmp)
+plt.title('A8 - high PSI')
+sns.ecdfplot(data=X_train, x='A15', hue=tmp)
+plt.title('A15 - low PSI')
+X_train[tmp]['A6'].unique()
+X_train[tmp]['A6'].nunique()
+len(X_train[tmp]['A6']) / len(X_train)
+X_train[~tmp]['A6'].unique()
+X_train[~tmp]['A6'].nunique()
+len(X_train[~tmp]['A6']) / len(X_train)
+X_train.shape, X_test.shape
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+X_train.shape, X_test.shape
+X_train, X_test, y_train, y_test = train_test_split(data[vars_cat +
+    vars_num], data['A16'], test_size=0.1, random_state=42)
+transformer = DropHighPSIFeatures(cut_off=['portfolio_2', 'portfolio_3'],
+    split_col='A13', strategy='equal_width', bins=5, threshold=0.1,
+    variables=vars_num, missing_values='ignore')
+transformer.fit(X_train)
+transformer.cut_off_
+transformer.psi_values_
+transformer.features_to_drop_
+tmp = X_train['A13'].isin(transformer.cut_off_)
+sns.ecdfplot(data=X_train, x='A3', hue=tmp)
+plt.title('A3 - high PSI')
+sns.ecdfplot(data=X_train, x='A11', hue=tmp)
+plt.title('A11 - high PSI')
+sns.ecdfplot(data=X_train, x='A2', hue=tmp)
+plt.title('A2 - high PSI')
+X_train.shape, X_test.shape
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+X_train.shape, X_test.shape
+data['date'].agg(['min', 'max'])
+X_train, X_test, y_train, y_test = train_test_split(data[vars_cat +
+    vars_num + ['date']], data['A16'], test_size=0.1, random_state=42)
+transformer = DropHighPSIFeatures(cut_off=pd.to_datetime('2018-12-14'),
+    split_col='date', strategy='equal_frequency', bins=8, threshold=0.1,
+    missing_values='ignore')
+transformer.fit(X_train)
+transformer.cut_off_
+transformer.psi_values_
+transformer.features_to_drop_
+tmp = X_train['date'] <= transformer.cut_off_
+sns.ecdfplot(data=X_train, x='A3', hue=tmp)
+plt.title('A3 - moderate PSI')
+sns.ecdfplot(data=X_train, x='A14', hue=tmp)
+X_train.shape, X_test.shape
+X_train = transformer.transform(X_train)
+X_test = transformer.transform(X_test)
+X_train.shape, X_test.shape
+
+
+
+================================================
+File: Recursive-Feature-Addition.py
+================================================
+
+
+
+================================================
+File: Recursive-Feature-Elimination.py
+================================================
+
+
+
+================================================
+File: Select-by-Feature-Shuffling.py
+================================================
+
+
+
+================================================
+File: Select-by-MinimumRedundance-MaximumRelevante.py
+================================================
+# Generated from: Select-by-MinimumRedundance-MaximumRelevante.ipynb
+
+# MRMR Feature Selection by Maykon Schots & Matheus Rugollo
+
+
+# <h1> Numerical Feature Selection by MRMR </h1>
+# <hr></hr>
+#
+# Experimenting fast is key to success in Data Science. When experimenting we're going to bump with huge datasets that require special attention when feature selecting and engineering. In a profit driven context, it's important to quickly test the potential value of an idea rather than exploring the best way to use your data or parametrize a machine learning model. It not only takes time that we usually can't afford but also increase financial costs. 
+#
+# Herewit we describe an efficient solution to reduce dimensionality of your dataset, by identifying and creating clusters of redundant features and selecting the most relevant one. This has potential to speed up your experimentation process and reduce costs.</p>
+#
+# <hr></hr>
+# <h5>Case</h5>
+#
+# You might be wondering how this applies to a real use case and why we had to come up with such technique. Hear this story:
+# Consider a project in a financial company that we try to understand how likely a client is to buy a product through Machine Learning. Other then profile features, we usually end up with many financial transactions history features of the clients. With that in mind we can assume that probably many of them are highly correlated, e.g in order to buy something of x value, the client probably received a value > x in the past, and since we're going to extract aggregation features from such events we're going to end up with a lot of correlation between them. 
+#
+#
+# The solution was to come up with an efficient "automatic" way to wipe redundant features from the training set, that can vary from time to time, maintaining our model performance. With this we can always consider at the start of our pipeline all of our "raw" features and select the most relevant of them that are not highly correlated in given moment.
+#
+# Based on a published [article](https://arxiv.org/abs/1908.05376) we developed an implementation using [feature_engine](https://github.com/feature-engine/feature_engine) and [sklearn](https://scikit-learn.org/stable/). Follow the step-by-step to understand our approach.
+
+
+# <h3> Classification Example </h3>
+# <hr>
+#
+# In order to demonstrate, use the [make_classification](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html) helper function from sklearn  to create a set of features making sure that some of them are redundant. Convert both X and y returned by it to be pandas DataFrames for further compatibility with sklearn api.
+
+
+import warnings
+
+import pandas as pd
+from sklearn.datasets import make_classification
+
+warnings.filterwarnings('ignore')
+
+X, y = make_classification(
+    n_samples=5000,
+    n_features=30,
+    n_redundant=15,
+    n_clusters_per_class=1,
+    weights=[0.50],
+    class_sep=2,
+    random_state=42
+)
+
+cols = []
+for i in range(len(X[0])):
+   cols.append(f"feat_{i}")
+X = pd.DataFrame(X, columns=cols)
+y = pd.DataFrame({"y": y})
+
+
+
+X.head()
+
+
+# <h4>Get Redundant Clusters</h4>
+# <hr></hr>
+#
+# Now that we have our master table example set up, we can start by taking advantage of [SmartCorrelatedSelection](https://feature-engine.readthedocs.io/en/1.0.x/selection/SmartCorrelatedSelection.html) implementation by feature_egine. Let's check it's parameters:
+#
+# <h5>Correlation Threshold </h5>
+# This can be a hot topic of discussion for each case, in order to keep as much useful data as possible the correlation threshold set was very conservative .97. 
+# p.s: This demonstration will only have one value set, but a good way of improving this pipeline would be to attempt multiple iterations lowering the threshold, then you could measure performance of given model with different sets of selected features.
+#
+# <h5>Method</h5>
+# The best option here was spearman, identifying both linear and non-linear numerical features correlated clusters to make it less redundant as possible through rank correlation threshold.
+#
+# <h5>Selection Method</h5>
+# This is not relevant for this implementation, because we're not going to use features selected by the SmartCorrelatedSelection. Use variance , it's faster.
+#
+#
+# <hr></hr>
+# <h6>Quick Comment</h6>
+# You might be wondering why we don't just use feature_engine methods, and we definitely considered and tried it, finally it inspired us to come up with some tweaks for our process. It's a very similar idea, but instead of variance we use mutual information to select one feature out of each cluster, it's also the ground work for optimal parametrization and further development of the pipeline for ad hoc usage.
+
+
+from feature_engine.selection import SmartCorrelatedSelection
+
+
+MODEL_TYPE = "classifier" ## Or "regressor"
+CORRELATION_THRESHOLD = .97
+
+# Setup Smart Selector /// Tks feature_engine
+feature_selector = SmartCorrelatedSelection(
+    variables=None,
+    method="spearman",
+    threshold=CORRELATION_THRESHOLD,
+    missing_values="ignore",
+    selection_method="variance",
+    estimator=None,
+)
+
+
+feature_selector.fit_transform(X)
+
+### Setup a list of correlated clusters as lists and a list of uncorrelated features
+correlated_sets = feature_selector.correlated_feature_sets_
+
+correlated_clusters = [list(feature) for feature in correlated_sets]
+
+correlated_features = [feature for features in correlated_clusters for feature in features]
+
+uncorrelated_features = [feature for feature in X if feature not in correlated_features]
+
+
+
+# <h4>Wiping Redundancy considering Relevance</h4>
+#
+# Now we're going to extract the best feature from each correlated cluster using [SelectKBest](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.SelectKBest.html) from sklearn.feature_selection. Here we use [mutual_info_classif](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_classif.html#sklearn.feature_selection.mutual_info_classif) implementation as our score_func for this classifier example, there are other options like mutual_info_regression be sure to select it according to your use case.
+#
+# The relevance of each selected feature is considered when we use mutual info of the samples against the target Y, this will be important so we do not lose any predictive power of our features.
+#
+# <hr></hr>
+#
+# We end up with a set of selected features that considering our correlation threshold of .97, probably will have similar performance. In a context where you want to prioritize reduction of dimensionality, you can check how the selection will perform to make a good decision about it.
+#
+# I don't want to believe, I want to know.
+
+
+from sklearn.feature_selection import (
+    SelectKBest,
+    mutual_info_classif,
+    mutual_info_regression,
+)
+
+
+mutual_info = {
+    "classifier": mutual_info_classif,
+    "regressor": mutual_info_regression,
+}
+
+top_features_cluster = []
+for cluster in correlated_clusters:
+            selector = SelectKBest(score_func=mutual_info[MODEL_TYPE], k=1)  # selects the top feature (k=1) regarding target mutual information
+            selector = selector.fit(X[cluster], y)
+            top_features_cluster.append(
+                list(selector.get_feature_names_out())[0]
+            )
+
+selected_features = top_features_cluster + uncorrelated_features
+
+
+# <h4>Evaluating the set of features</h4>
+#
+# Now that we have our set it's time to decide if we're going with it or not. In this demonstration, the idea was to use a GridSearch to find the best hyperparameters for a RandomForestClassifier providing us with the best possible estimator. 
+#
+# If we attempt to fit many grid searches in a robust way, it would take too long and be very costy. Since we're just experimenting, initally we can use basic cross_validate with the chosen estimator, and we can quickly discard "gone wrong" selections, specially when we lower down our correlation threshold for the clusters.
+#
+# It's an efficient way to approach experimenation with this method, although I highly recommend going for a more robust evaluation with grid searches or other approaches, and a deep discussion on the impact of the performance threshold for your use cause, sometimes 1% can be a lot of $.
+
+
+import os
+import multiprocessing
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import StratifiedKFold, cross_validate
+
+
+cv = StratifiedKFold(shuffle=True, random_state=42)
+
+baseline_raw = cross_validate(
+    RandomForestClassifier(
+        max_samples=1.0,
+        n_jobs=int(os.getenv("N_CORES", 0.50 * multiprocessing.cpu_count())), # simplifica isso aqui pro artigo, bota -1.
+        random_state=42
+    ),
+    X,
+    y,
+    cv=cv,
+    scoring="f1", # or any other metric that you want.
+    groups=None
+)
+
+baseline_selected_features = cross_validate(
+            RandomForestClassifier(),
+            X[selected_features],
+            y,
+            cv=cv,
+            scoring="f1",
+            groups=None,
+            error_score="raise",
+        )
+
+score_raw = baseline_raw["test_score"].mean()
+score_baseline = baseline_selected_features["test_score"].mean()
+
+# Define a threshold to decide whether to reduce or not the dimensionality for your test case
+dif = round(((score_raw - score_baseline) / score_raw), 3)
+
+# 5% is our limit (ponder how it will impact your product $)
+performance_threshold = -0.050
+
+if dif >= performance_threshold:
+    print(f"It's worth to go with the selected set =D")
+elif dif < performance_threshold:
+    print(f"The performance reduction is not acceptable!!!! >.<")
+
+
+
+# <h2> Make it better ! </h2>
+#
+# <p> Going Further on implementing a robust feature selection with MRMR , we can use the process explained above to iterate over a range of threshold and choose what's best for our needs instead of a simple score performance evaluation! </p>
+
+
+# Repeat df from example.
+
+import warnings
+
+import pandas as pd
+from sklearn.datasets import make_classification
+
+warnings.filterwarnings('ignore')
+
+X, y = make_classification(
+    n_samples=5000,
+    n_features=30,
+    n_redundant=15,
+    n_clusters_per_class=1,
+    weights=[0.50],
+    class_sep=2,
+    random_state=42
+)
+
+cols = []
+for i in range(len(X[0])):
+   cols.append(f"feat_{i}")
+X = pd.DataFrame(X, columns=cols)
+y = pd.DataFrame({"y": y})
+
+
+
+# Functions to iterate over accepted threshold
+from sklearn.feature_selection import (
+    SelectKBest,
+    mutual_info_classif,
+    mutual_info_regression,
+)
+import os
+import multiprocessing
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import StratifiedKFold, cross_validate
+
+import pandas as pd
+from feature_engine.selection import SmartCorrelatedSelection
+
+
+def select_features_clf(X: pd.DataFrame, y: pd.DataFrame, corr_threshold: float) -> list:
+    """ Function will select a set of features with minimum redundance and maximum relevante based on the set correlation threshold """
+    # Setup Smart Selector /// Tks feature_engine
+    feature_selector = SmartCorrelatedSelection(
+        variables=None,
+        method="spearman",
+        threshold=corr_threshold,
+        missing_values="ignore",
+        selection_method="variance",
+        estimator=None,
+    )
+    feature_selector.fit_transform(X)
+    ### Setup a list of correlated clusters as lists and a list of uncorrelated features
+    correlated_sets = feature_selector.correlated_feature_sets_
+    correlated_clusters = [list(feature) for feature in correlated_sets]
+    correlated_features = [feature for features in correlated_clusters for feature in features]
+    uncorrelated_features = [feature for feature in X if feature not in correlated_features]
+    top_features_cluster = []
+    for cluster in correlated_clusters:
+                selector = SelectKBest(score_func=mutual_info_classif, k=1)  # selects the top feature (k=1) regarding target mutual information
+                selector = selector.fit(X[cluster], y)
+                top_features_cluster.append(
+                    list(selector.get_feature_names_out())[0]
+                )
+    return top_features_cluster + uncorrelated_features
+
+def get_clf_model_scores(X: pd.DataFrame, y: pd.DataFrame, scoring: str, selected_features:list):
+    """ """
+    cv = StratifiedKFold(shuffle=True, random_state=42) 
+    model_result = cross_validate(
+        RandomForestClassifier(),
+        X[selected_features],
+        y,
+        cv=cv,
+        scoring=scoring,
+        groups=None,
+        error_score="raise",
+    )
+    return model_result["test_score"].mean(), model_result["fit_time"].mean(), model_result["score_time"].mean()
+
+def evaluate_clf_feature_selection_range(X: pd.DataFrame, y: pd.DataFrame, scoring:str, corr_range: int, corr_starting_point: float = .98) -> pd.DataFrame:
+    """ Evaluates feature selection for every .01 on corr threshold """
+    evaluation_data = {
+        "corr_threshold": [],
+        scoring: [],
+        "n_features": [],
+        "fit_time": [],
+        "score_time": []
+    }
+    for i in range(corr_range):
+        current_corr_threshold = corr_starting_point - (i / 100) ## Reduces .01 on corr_threshold for every iteration
+        selected_features = select_features_clf(X, y, corr_threshold=current_corr_threshold)
+        score, fit_time, score_time = get_clf_model_scores(X, y, scoring, selected_features)
+        evaluation_data["corr_threshold"].append(current_corr_threshold)
+        evaluation_data[scoring].append(score)
+        evaluation_data["n_features"].append(len(selected_features))
+        evaluation_data["fit_time"].append(fit_time)
+        evaluation_data["score_time"].append(score_time)
+        
+    return pd.DataFrame(evaluation_data)
+
+
+
+evaluation_df = evaluate_clf_feature_selection_range(X, y, "f1", 15)
+
+
+%pip install hiplot
+
+
+import hiplot
+from IPython.display import HTML
+
+# html = hiplot.Experiment.from_dataframe(evaluation_df).to_html()
+# displayHTML(html)
+
+exp = hiplot.Experiment.from_dataframe(evaluation_df)
+HTML(exp.to_html())
+
+
+
+
+================================================
+File: Select-by-Single-Feature-Performance.py
+================================================
+"""
+## Univariate Single Performance
+
+- Train a ML model per every single feature
+- Determine the performance of the models
+- Select features if model performance is above a certain threshold
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.metrics import roc_auc_score, mean_squared_error
+from feature_engine.selection import SelectBySingleFeaturePerformance
+data.head()
+X_train, X_test, y_train, y_test = train_test_split(data.drop(labels=[
+    'target'], axis=1), data['target'], test_size=0.3, random_state=0)
+X_train.shape, X_test.shape
+rf = RandomForestClassifier(n_estimators=10, random_state=1, n_jobs=4)
+sel = SelectBySingleFeaturePerformance(variables=None, estimator=rf,
+    scoring='roc_auc', cv=3, threshold=0.5)
+sel.fit(X_train, y_train)
+sel.feature_performance_
+pd.Series(sel.feature_performance_).sort_values(ascending=False).plot.bar(
+    figsize=(20, 5))
+plt.title('Performance of ML models trained with individual features')
+plt.ylabel('roc-auc')
+len(sel.features_to_drop_)
+X_train = sel.transform(X_train)
+X_test = sel.transform(X_test)
+X_train.shape, X_test.shape
+data = pd.read_csv('../houseprice.csv')
+data.shape
+numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
+numerical_vars = list(data.select_dtypes(include=numerics).columns)
+data = data[numerical_vars]
+data.shape
+data.head()
+data.fillna(0, inplace=True)
+X_train, X_test, y_train, y_test = train_test_split(data.drop(labels=['Id',
+    'SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+X_train.shape, X_test.shape
+rf = RandomForestRegressor(n_estimators=10, max_depth=2, random_state=1,
+    n_jobs=4)
+sel = SelectBySingleFeaturePerformance(variables=None, estimator=rf,
+    scoring='r2', cv=3, threshold=0.5)
+sel.fit(X_train, y_train)
+sel.feature_performance_
+pd.Series(sel.feature_performance_).sort_values(ascending=False).plot.bar(
+    figsize=(20, 5))
+plt.title('Performance of ML models trained with individual features')
+plt.ylabel('r2')
+np.abs(pd.Series(sel.feature_performance_)).sort_values(ascending=False
+    ).plot.bar(figsize=(20, 5))
+plt.title('Performance of ML models trained with individual features')
+plt.ylabel('r2 - absolute value')
+len(sel.features_to_drop_)
+X_train = sel.transform(X_train)
+X_test = sel.transform(X_test)
+X_train.shape, X_test.shape
+X_train, X_test, y_train, y_test = train_test_split(data.drop(labels=['Id',
+    'SalePrice'], axis=1), data['SalePrice'], test_size=0.3, random_state=0)
+X_train.shape, X_test.shape
+rf = RandomForestRegressor(n_estimators=10, max_depth=2, random_state=1,
+    n_jobs=4)
+sel = SelectBySingleFeaturePerformance(variables=None, estimator=rf,
+    scoring='neg_mean_squared_error', cv=3, threshold=None)
+sel.fit(X_train, y_train)
+sel.feature_performance_
+pd.Series(sel.feature_performance_).sort_values(ascending=False).plot.bar(
+    figsize=(20, 5))
+plt.title('Performance of ML models trained with individual features')
+plt.ylabel('Negative mean Squared Error')
+sel.features_to_drop_
+pd.Series(sel.feature_performance_)[sel.features_to_drop_].sort_values(
+    ascending=False).plot.bar(figsize=(20, 5))
+
+
+
+================================================
+File: Select-by-Target-Mean-Encoding.py
+================================================
+"""
+## Select with Target Mean as Performance Proxy
+
+**Method used in a KDD 2009 competition**
+
+This feature selection approach was used by data scientists at the University of Melbourne in the [KDD 2009](http://www.kdd.org/kdd-cup/view/kdd-cup-2009) data science competition. The task consisted in predicting churn based on a dataset with a huge number of features.
+
+The authors describe this procedure as an aggressive non-parametric feature selection procedure that is based in contemplating the relationship between the feature and the target.
+
+
+**The procedure consists in the following steps**:
+
+For each categorical variable:
+
+    1) Separate into train and test
+
+    2) Determine the mean value of the target within each label of the categorical variable using the train set
+
+    3) Use that mean target value per label as the prediction (using the test set) and calculate the roc-auc.
+
+For each numerical variable:
+
+    1) Separate into train and test
+    
+    2) Divide the variable intervals
+
+    3) Calculate the mean target within each interval using the training set 
+
+    4) Use that mean target value / bin as the prediction (using the test set) and calculate the roc-auc
+
+
+The authors quote the following advantages of the method:
+
+- Speed: computing mean and quantiles is direct and efficient
+- Stability respect to scale: extreme values for continuous variables do not skew the predictions
+- Comparable between categorical and numerical variables
+- Accommodation of non-linearities
+
+**Important**
+The authors here use the roc-auc, but in principle, we could use any metric, including those valid for regression.
+
+The authors sort continuous variables into percentiles, but Feature-engine gives the option to sort into equal-frequency or equal-width intervals.
+"""
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
+from feature_engine.selection import SelectByTargetMeanPerformance
+data = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+data.drop(labels=['name', 'boat', 'ticket', 'body', 'home.dest'], axis=1,
+    inplace=True)
+data = data.replace('?', np.nan)
+data.dropna(subset=['embarked', 'fare'], inplace=True)
+data['age'] = data['age'].astype('float')
+data['age'] = data['age'].fillna(data['age'].mean())
+data['fare'] = data['fare'].astype('float')
+
+
+def get_first_cabin(row):
+    try:
+        return row.split()[0]
+    except:
+        return 'N'
+
+
+data['cabin'] = data['cabin'].apply(get_first_cabin)
+data.head()
+data['cabin'] = data['cabin'].str[0]
+data['cabin'] = np.where(data['cabin'].isin(['T', 'G']), 'N', data['cabin'])
+data['cabin'].unique()
+data.dtypes
+data['parch'].value_counts()
+data['parch'] = np.where(data['parch'] > 3, 3, data['parch'])
+data['sibsp'].value_counts()
+data['sibsp'] = np.where(data['sibsp'] > 3, 3, data['sibsp'])
+data[['pclass', 'sibsp', 'parch']] = data[['pclass', 'sibsp', 'parch']].astype(
+    'O')
+data.isnull().sum()
+X_train, X_test, y_train, y_test = train_test_split(data.drop(['survived'],
+    axis=1), data['survived'], test_size=0.3, random_state=0)
+X_train.shape, X_test.shape
+sel = SelectByTargetMeanPerformance(variables=None, scoring='roc_auc_score',
+    threshold=0.6, bins=3, strategy='equal_frequency', cv=2, random_state=1)
+sel.fit(X_train, y_train)
+sel.variables_categorical_
+sel.variables_numerical_
+sel.feature_performance_
+sel.features_to_drop_
+X_train = sel.transform(X_train)
+X_test = sel.transform(X_test)
+X_train.shape, X_test.shape
+
+================================================
+File: Select-Information-Value.py
+================================================
+
+# SelectByInformationValue
+from feature_engine.selection import SelectByInformationValue
+from sklearn.datasets import make_classification
+import pandas as pd
+
+X, y = make_classification(n_samples=1000, n_features=10)
+X = pd.DataFrame(X, columns=[f'feat_{i}' for i in range(10)])
+y = pd.Series(y).map({0: 'A', 1: 'B'})
+selector = SelectByInformationValue(
+    bins=5,
+    strategy="equal_frequency",
+    threshold=0.1,
+)
+selector
+
+X_filtered = selector.fit_transform(X, y)
+
+================================================
+File: Smart-Correlation-Selection.py
+================================================
+"""
+## Custom methods in `SmartCorrelatedSelection`
+
+In this tutorial we show how to pass a custom method to `SmartCorrelatedSelection` using the association measure [Distance Correlation](https://m-clark.github.io/docs/CorrelationComparison.pdf) from the python package [dcor](https://dcor.readthedocs.io/en/latest/index.html). Install `dcor` before starting the tutorial
+
+```
+!pip install dcor
+```
+"""
+import pandas as pd
+import dcor
+import warnings
+from sklearn.datasets import make_classification
+from feature_engine.selection import SmartCorrelatedSelection
+warnings.filterwarnings('ignore')
+X, _ = make_classification(n_samples=1000, n_features=12, n_redundant=6,
+    n_clusters_per_class=1, weights=[0.5], class_sep=2, random_state=1)
+colnames = [('var_' + str(i)) for i in range(12)]
+X = pd.DataFrame(X, columns=colnames)
+dcor_tr = SmartCorrelatedSelection(variables=None, method=dcor.
+    distance_correlation, threshold=0.75, missing_values='raise',
+    selection_method='variance', estimator=None)
+X_dcor = dcor_tr.fit_transform(X)
+X_dcor
+from sklearn.feature_selection import mutual_info_regression
+
+
+def custom_mi(x, y):
+    x = x.reshape(-1, 1)
+    y = y.reshape(-1, 1)
+    return mutual_info_regression(x, y)[0]
+
+
+mi_tr = SmartCorrelatedSelection(variables=None, method=custom_mi,
+    threshold=0.75, missing_values='raise', selection_method='variance',
+    estimator=None)
+X_mi = mi_tr.fit_transform(X)
+X_mi
+
+
+
+
+
+================================================
+File: transformation.txt
+================================================
+Directory structure:
+└── transformation/
+    ├── BoxCoxTransformer.py
+    ├── LogCpTransformer.py
+    ├── LogTransformer.py
+    ├── PowerTransformer.py
+    ├── ReciprocalTransformer.py
+    └── YeoJohnsonTransformer.py
+
+================================================
+File: BoxCoxTransformer.py
+================================================
+"""
+# Variable transformers : BoxCoxTransformer
+
+The BoxCoxTransformer() applies the BoxCox transformation to numerical
+variables.
+
+The Box-Cox transformation is defined as:
+
+- T(Y)=(Y exp(λ)−1)/λ if λ!=0
+- log(Y) otherwise
+
+where Y is the response variable and λ is the transformation parameter. λ varies,
+typically from -5 to 5. In the transformation, all values of λ are considered and
+the optimal value for a given variable is selected.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer, CategoricalImputer
+from feature_engine.transformation import BoxCoxTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+bct = BoxCoxTransformer(variables=['LotArea', 'GrLivArea'])
+bct.fit(X_train)
+bct.lambda_dict_
+train_t = bct.transform(X_train)
+test_t = bct.transform(X_test)
+X_train['GrLivArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('GrLivArea')
+train_t['GrLivArea'].hist(bins=50)
+plt.title('Transformed variable')
+plt.xlabel('GrLivArea')
+X_train['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+variables = ['LotFrontage', 'LotArea', '1stFlrSF', 'GrLivArea',
+    'TotRmsAbvGrd', 'SalePrice']
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+arbitrary_imputer = ArbitraryNumberImputer(arbitrary_number=2)
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+numeric_columns = train_t.select_dtypes(include=['int64', 'float64']).columns
+numeric_columns
+train_numeric = train_t[numeric_columns].copy()
+for column in numeric_columns:
+    min_val = train_numeric[column].min()
+    if min_val <= 0:
+        print(f'{column}: minimum value = {min_val}')
+        shift = abs(min_val) + 1
+        train_numeric[column] = train_numeric[column] + shift
+train_numeric.describe()
+for col in train_numeric.columns:
+    q75 = train_numeric[col].quantile(0.75)
+    q25 = train_numeric[col].quantile(0.25)
+    iqr = q75 - q25
+    upper_bound = q75 + 1.5 * iqr
+    if train_numeric[col].max() > upper_bound:
+        print(f'\n{col}:')
+        print(f'Max value: {train_numeric[col].max()}')
+        print(f'Upper bound: {upper_bound}')
+"""
+
+from feature_engine.transformation import YeoJohnsonTransformer
+from feature_engine.outliers import Winsorizer
+
+
+
+
+problematic_cols = ['BsmtFinSF2', 'LowQualFinSF', 'BsmtHalfBath', 'KitchenAbvGr', 
+                    'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal']
+good_cols = [col for col in train_numeric.columns if col not in problematic_cols]
+train_good = train_numeric[good_cols]
+
+winsor = Winsorizer(capping_method='iqr', tail='both', fold=1.5)
+train_winsorized_good = winsor.fit_transform(train_good)
+
+train_winsorized = pd.concat([train_winsorized_good, train_numeric[problematic_cols]], axis=1)
+
+
+yjt = YeoJohnsonTransformer()
+train_transformed = yjt.fit_transform(train_winsorized)
+
+print("
+Skewness before transformation:")
+print(train_numeric.skew())
+print("
+Skewness after transformation:")
+print(train_transformed.skew())
+
+"""
+bct = BoxCoxTransformer()
+bct.fit(train_numeric)
+bct.variables_
+from feature_engine.transformation import YeoJohnsonTransformer
+test_numeric = test_t[numeric_columns].copy()
+yjt = YeoJohnsonTransformer()
+yjt.fit(train_numeric)
+train_t[numeric_columns] = yjt.transform(train_numeric)
+test_t[numeric_columns] = yjt.transform(test_numeric)
+bct.lambda_dict_
+
+
+
+================================================
+File: LogCpTransformer.py
+================================================
+"""
+# Variable transformers : LogCpTransformer
+
+
+The `LogCpTransformer()` applies the transformation log(x + C), where C is a positive constant, to the input variable. 
+
+It applies the natural logarithm or the base 10 logarithm, where the natural logarithm is logarithm in base e by setting the param `base="e"` or `base="10"`.
+
+The `LogCpTransformer()`  only works with numerical non-negative values after adding a constant C. If the variable contains a zero or a negative value after adding a constant C, the transformer will return an error.
+
+The transformer can automatically find the constant C to each variable by setting `C="auto"`.
+
+A list of variables can be passed as an argument. Alternatively, the transformer will automatically select and transform all variables of type numeric.
+"""
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import fetch_california_housing
+from feature_engine.transformation import LogCpTransformer
+X, y = fetch_california_housing(return_X_y=True)
+X = pd.DataFrame(X)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+print('Column names:', list(X_train.columns))
+print("""
+Column positions:""")
+for i, col in enumerate(X_train.columns):
+    print(f'{i}: {col}')
+num_feats = [6, 7]
+tf = LogCpTransformer(variables=num_feats, C='auto')
+tf.fit(X_train)
+train_t = tf.transform(X_train)
+test_t = tf.transform(X_test)
+plt.figure(figsize=(12, 12))
+for idx, col in enumerate(num_feats, start=1):
+    plt.subplot(2, 2, round(idx * 1.4))
+    plt.title(f'Untransformed variable {col}')
+    X_train[col].hist()
+    plt.subplot(2, 2, idx * 2)
+    plt.title(f'Transformed variable {col}')
+    train_t[col].hist()
+tf.variables_
+tf.C_
+
+
+
+================================================
+File: LogTransformer.py
+================================================
+"""
+# Variable transformers : LogTransformer
+
+The LogTransformer() applies the natural logarithm or the base 10 logarithm to
+numerical variables. The natural logarithm is logarithm in base e.
+
+The LogTransformer() only works with numerical non-negative values. If the variable
+contains a zero or a negative value the transformer will return an error.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+from feature_engine.transformation import LogTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train['LotArea'].hist(bins=50)
+X_train['GrLivArea'].hist(bins=50)
+lt = LogTransformer(variables=['LotArea', 'GrLivArea'], base='e')
+lt.fit(X_train)
+lt.variables_
+train_t = lt.transform(X_train)
+test_t = lt.transform(X_test)
+train_t['LotArea'].hist(bins=50)
+train_t['GrLivArea'].hist(bins=50)
+train_orig = lt.inverse_transform(train_t)
+test_orig = lt.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+variables = ['LotFrontage', 'LotArea', '1stFlrSF', 'GrLivArea',
+    'TotRmsAbvGrd', 'SalePrice']
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+arbitrary_imputer = ArbitraryNumberImputer(arbitrary_number=2)
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+numeric_columns = train_t.select_dtypes(include=['int64', 'float64']).columns
+train_numeric = train_t[numeric_columns].copy()
+train_numeric
+meaningful_zeros = ['BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath',
+    'BedroomAbvGr', 'KitchenAbvGr', 'Fireplaces', 'GarageCars', 'PoolArea']
+area_columns = ['MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF',
+    'TotalBsmtSF', '2ndFlrSF', 'LowQualFinSF', 'GarageArea', 'WoodDeckSF',
+    'OpenPorchSF', 'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'MiscVal']
+train_shifted = train_numeric.copy()
+for col in area_columns:
+    train_shifted[col] = train_numeric[col] + 1
+variables_to_transform = [col for col in train_numeric.columns if col not in
+    meaningful_zeros]
+lt = LogTransformer(base='10', variables=variables_to_transform)
+lt.fit(train_shifted)
+lt.variables_
+train_t['GrLivArea'].hist(bins=50)
+plt.title('GrLivArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('LotArea')
+train_t.columns
+train_shifted = train_t.copy()
+test_shifted = test_t.copy()
+for col in area_columns:
+    if col in train_t.columns:
+        train_shifted[col] = train_t[col] + 1
+    if col in test_t.columns:
+        test_shifted[col] = test_t[col] + 1
+variables_to_transform = [col for col in train_numeric.columns if col not in
+    meaningful_zeros]
+lt = LogTransformer(base='10', variables=variables_to_transform)
+lt.fit(train_shifted)
+train_transformed = lt.transform(train_shifted)
+test_transformed = lt.transform(test_shifted)
+train_t[variables_to_transform] = train_transformed[variables_to_transform]
+test_t[variables_to_transform] = test_transformed[variables_to_transform]
+train_t['GrLivArea'].hist(bins=50)
+plt.title('GrLivArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('LotArea')
+train_orig = lt.inverse_transform(train_t)
+test_orig = lt.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+
+
+
+================================================
+File: PowerTransformer.py
+================================================
+"""
+# Variable transformers : PowerTransformer
+
+The PowerTransformer() applies power or exponential transformations to
+numerical variables.
+
+The PowerTransformer() works only with numerical variables.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+from feature_engine.transformation import PowerTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+et_transformer = PowerTransformer(variables=['LotArea', 'GrLivArea'], exp=0.5)
+et_transformer.fit(X_train)
+train_t = et_transformer.transform(X_train)
+test_t = et_transformer.transform(X_test)
+X_train['GrLivArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('GrLivArea')
+train_t['GrLivArea'].hist(bins=50)
+plt.title('Transformed variable')
+plt.xlabel('GrLivArea')
+X_train['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_orig = et_transformer.inverse_transform(train_t)
+test_orig = et_transformer.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+arbitrary_imputer = ArbitraryNumberImputer()
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+et = PowerTransformer(exp=2, variables=None)
+et.fit(train_t)
+et.variables_
+train_t['GrLivArea'].hist(bins=50)
+train_t = et.transform(train_t)
+test_t = et.transform(test_t)
+train_t['GrLivArea'].hist(bins=50)
+train_orig = et_transformer.inverse_transform(train_t)
+test_orig = et_transformer.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+
+
+
+================================================
+File: ReciprocalTransformer.py
+================================================
+"""
+# Variable transformers : ReciprocalTransformer
+
+The ReciprocalTransformer() applies the reciprocal transformation 1 / x
+to numerical variables.
+
+The ReciprocalTransformer() only works with numerical variables with non-zero
+values. If a variable contains the value  the transformer will raise an error.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+from feature_engine.transformation import ReciprocalTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+rt = ReciprocalTransformer(variables=['LotArea', 'GrLivArea'])
+rt.fit(X_train)
+rt.variables_
+train_t = rt.transform(X_train)
+test_t = rt.transform(X_test)
+X_train['GrLivArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('GrLivArea')
+train_t['GrLivArea'].hist(bins=50)
+plt.title('Transformed variable')
+plt.xlabel('GrLivArea')
+X_train['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_orig = rt.inverse_transform(train_t)
+test_orig = rt.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+variables = ['LotFrontage', 'LotArea', '1stFlrSF', 'GrLivArea',
+    'TotRmsAbvGrd', 'SalePrice']
+train_df = pd.read_csv('../data/house-prices/train.csv', usecols=['Id'] +
+    variables)
+test_df = pd.read_csv('../data/house-prices/test.csv', usecols=['Id'] +
+    variables[:-1])
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+arbitrary_imputer = ArbitraryNumberImputer(arbitrary_number=2)
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+rt = ReciprocalTransformer()
+rt.fit(train_t)
+rt.variables_
+train_t['GrLivArea'].hist(bins=50)
+train_t['LotArea'].hist(bins=50)
+train_t = rt.transform(train_t)
+test_t = rt.transform(test_t)
+train_t['GrLivArea'].hist(bins=50)
+train_t['LotArea'].hist(bins=50)
+train_orig = rt.inverse_transform(train_t)
+test_orig = rt.inverse_transform(test_t)
+train_orig['LotArea'].hist(bins=50)
+train_orig['GrLivArea'].hist(bins=50)
+
+
+
+================================================
+File: YeoJohnsonTransformer.py
+================================================
+"""
+# Variable transformers : YeoJohnsonTransformer
+
+The YeoJohnsonTransformer() applies the Yeo-Johnson transformation to the
+numerical variables.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+from feature_engine.transformation import YeoJohnsonTransformer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+yjt = YeoJohnsonTransformer(variables=['LotArea', 'GrLivArea'])
+yjt.fit(X_train)
+yjt.lambda_dict_
+train_t = yjt.transform(X_train)
+test_t = yjt.transform(X_test)
+X_train['GrLivArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('GrLivArea')
+train_t['GrLivArea'].hist(bins=50)
+plt.title('Transformed variable')
+plt.xlabel('GrLivArea')
+X_train['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+train_t['LotArea'].hist(bins=50)
+plt.title('Variable before transformation')
+plt.xlabel('LotArea')
+arbitrary_imputer = ArbitraryNumberImputer(arbitrary_number=2)
+arbitrary_imputer.fit(X_train)
+train_t = arbitrary_imputer.transform(X_train)
+test_t = arbitrary_imputer.transform(X_test)
+yjt = YeoJohnsonTransformer()
+yjt.fit(train_t)
+yjt.variables_
+yjt.lambda_dict_
+train_t = yjt.transform(train_t)
+test_t = yjt.transform(test_t)
+
+
+
+
+
+================================================
+File: wrappers.txt
+================================================
+Directory structure:
+└── wrappers/
+    ├── Sklearn-wrapper-plus-Categorical-Encoding.py
+    ├── Sklearn-wrapper-plus-KBinsDiscretizer.py
+    ├── Sklearn-wrapper-plus-SimpleImputer.py
+    ├── Sklearn-wrapper-plus-feature-selection.py
+    └── Sklearn-wrapper-plus-scalers.py
+
+================================================
+File: Sklearn-wrapper-plus-Categorical-Encoding.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OrdinalEncoder
+from feature_engine.wrappers import SklearnTransformerWrapper
+from feature_engine.encoding import RareLabelEncoder
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+cols = ['Alley', 'MasVnrType', 'BsmtQual', 'BsmtCond', 'BsmtExposure',
+    'BsmtFinType1', 'BsmtFinType2', 'Electrical', 'FireplaceQu',
+    'GarageType', 'GarageFinish', 'GarageQual']
+rare_label_enc = RareLabelEncoder(n_categories=2, variables=cols)
+X_train = rare_label_enc.fit_transform(X_train.fillna('Missing'))
+X_test = rare_label_enc.transform(X_test.fillna('Missing'))
+encoder = SklearnTransformerWrapper(transformer=OrdinalEncoder(), variables
+    =cols)
+encoder.fit(X_train)
+encoder.transformer_.categories_
+X_train = encoder.transform(X_train)
+X_test = encoder.transform(X_test)
+X_train[cols].isnull().mean()
+X_test[cols].head()
+
+
+
+================================================
+File: Sklearn-wrapper-plus-KBinsDiscretizer.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import KBinsDiscretizer
+from feature_engine.wrappers import SklearnTransformerWrapper
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+cols = [var for var in X_train.columns if X_train[var].dtypes != 'O']
+cols
+X_train[cols].hist(bins=50, figsize=(15, 15))
+plt.show()
+variables = ['GrLivArea', 'GarageArea']
+X_train[variables].isnull().mean()
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+discretizer = Pipeline([('imputer', SklearnTransformerWrapper(transformer=
+    SimpleImputer(strategy='median'), variables=variables)), ('discretizer',
+    SklearnTransformerWrapper(transformer=KBinsDiscretizer(n_bins=5,
+    strategy='quantile', encode='ordinal'), variables=variables))])
+discretizer.fit(X_train)
+X_train = discretizer.transform(X_train)
+X_test = discretizer.transform(X_test)
+X_test['GrLivArea'].value_counts(normalize=True)
+X_test['GarageArea'].value_counts(normalize=True)
+X_test[variables].hist()
+plt.show()
+
+
+
+================================================
+File: Sklearn-wrapper-plus-SimpleImputer.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
+from feature_engine.wrappers import SklearnTransformerWrapper
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+imputer = SklearnTransformerWrapper(transformer=SimpleImputer(strategy=
+    'mean'), variables=['LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.transformer_.statistics_
+X_train = imputer.transform(X_train)
+X_test = imputer.transform(X_test)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+cols = [c for c in train_df.columns if train_df[c].dtypes == 'O' and 
+    train_df[c].isnull().sum() > 0]
+train_df[cols].head()
+imputer = SklearnTransformerWrapper(transformer=SimpleImputer(strategy=
+    'most_frequent'), variables=cols)
+imputer.fit(X_train)
+imputer.transformer_.statistics_
+X_train = imputer.transform(X_train)
+X_test = imputer.transform(X_test)
+X_train[cols].isnull().mean()
+X_test[cols].head()
+
+
+
+================================================
+File: Sklearn-wrapper-plus-feature-selection.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import f_regression, SelectKBest, SelectFromModel
+from sklearn.linear_model import Lasso
+from feature_engine.wrappers import SklearnTransformerWrapper
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+cols = [var for var in X_train.columns if X_train[var].dtypes != 'O']
+cols
+selector = SklearnTransformerWrapper(transformer=SelectKBest(f_regression,
+    k=5), variables=cols)
+selector.fit(X_train.fillna(0), y_train)
+selector.transformer_.get_support(indices=True)
+X_train.columns[selector.transformer_.get_support(indices=True)]
+X_train_t = selector.transform(X_train.fillna(0))
+X_test_t = selector.transform(X_test.fillna(0))
+X_test_t.head()
+lasso = Lasso(alpha=10000, random_state=0)
+sfm = SelectFromModel(lasso, prefit=False)
+selector = SklearnTransformerWrapper(transformer=sfm, variables=cols)
+selector.fit(X_train.fillna(0), y_train)
+selector.transformer_.get_support(indices=True)
+len(selector.transformer_.get_support(indices=True))
+len(cols)
+X_train_t = selector.transform(X_train.fillna(0))
+X_test_t = selector.transform(X_test.fillna(0))
+X_test_t.head()
+
+
+
+================================================
+File: Sklearn-wrapper-plus-scalers.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from feature_engine.wrappers import SklearnTransformerWrapper
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+cols = [var for var in X_train.columns if X_train[var].dtypes != 'O']
+cols
+scaler = SklearnTransformerWrapper(transformer=StandardScaler(), variables=cols
+    )
+scaler.fit(X_train.fillna(0))
+X_train = scaler.transform(X_train.fillna(0))
+X_test = scaler.transform(X_test.fillna(0))
+scaler.transformer_.mean_
+scaler.transformer_.scale_
+X_train[cols].mean()
+X_train[cols].std()

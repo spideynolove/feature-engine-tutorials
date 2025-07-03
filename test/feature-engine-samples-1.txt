@@ -1,0 +1,2351 @@
+Directory structure:
+└── test/
+    ├── creation.txt
+    ├── datetime.txt
+    ├── discretisation.txt
+    ├── encoding.txt
+    ├── imputation.txt
+    ├── outliers.txt
+    ├── pipelines.txt
+    ├── preprocessing.txt
+    ├── selection.txt
+    ├── transformation.txt
+    └── wrappers.txt
+
+================================================
+File: creation.txt
+================================================
+Directory structure:
+└── creation/
+    ├── CombineWithReferenceFeature.py
+    └── MathematicalCombination.py
+
+================================================
+File: CombineWithReferenceFeature.py
+================================================
+"""
+
+## Feature Creation: Combine with reference feature
+
+The CombineWithReferenceFeature() applies combines a group of variables with a group of reference variables utilising mathematical operations ['sub', 'div','add','mul'], returning one or more additional features as a result.
+"""
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, roc_curve,classification_report, confusion_matrix
+from sklearn.pipeline import Pipeline as pipe
+from sklearn.preprocessing import StandardScaler
+from feature_engine.creation import RelativeFeatures
+pd.set_option('display.max_columns', None)
+data = pd.read_csv('../data/winequality-red.csv', sep=';')
+bins = [0, 5, 10]
+labels = [0, 1]
+data['quality_range'] = pd.cut(x=data['quality'], bins=bins, labels=labels)
+data[['quality_range', 'quality']].head(5)
+data.shape
+data.drop('quality', axis=1, inplace=True)
+data.shape
+
+
+def binary_add(x):
+    return x.iloc[0] + x.iloc[1]
+
+
+def binary_sub(x):
+    return x.iloc[0] - x.iloc[1]
+
+
+def binary_div(x):
+    return x.iloc[0] / x.iloc[1]
+
+
+def binary_mul(x):
+    return x.iloc[0] * x.iloc[1]
+
+
+sub_with_reference_feature = RelativeFeatures(variables=[
+    'total sulfur dioxide'], reference=['free sulfur dioxide'], func=['sub'])
+div_with_reference_feature = RelativeFeatures(variables=[
+    'free sulfur dioxide'], reference=['total sulfur dioxide'], func=['div'])
+sub_with_reference_feature.fit(data)
+data_t = sub_with_reference_feature.transform(data)
+data_t = div_with_reference_feature.fit_transform(data_t)
+data_t.head()
+multiple_combinator = RelativeFeatures(variables=['fixed acidity'],
+    reference=['volatile acidity'], func=['div', 'add'])
+multiple_combinator.fit(data_t)
+data_t = multiple_combinator.transform(data_t)
+data_t.head()
+X = data.drop(['quality_range'], axis=1)
+y = data.quality_range
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+    random_state=0, shuffle=True, stratify=y)
+X_train.shape, X_test.shape
+value_pipe = pipe([('subtraction', RelativeFeatures(variables=[
+    'total sulfur dioxide'], reference=['free sulfur dioxide'], func=['sub'
+    ])), ('ratio', RelativeFeatures(variables=['free sulfur dioxide'],
+    reference=['total sulfur dioxide'], func=['div'])), ('acidity',
+    RelativeFeatures(variables=['fixed acidity'], reference=[
+    'volatile acidity'], func=['div', 'add'])), ('scaler', StandardScaler()
+    ), ('LogisticRegression', LogisticRegression())])
+value_pipe.fit(X_train, y_train)
+pred_train = value_pipe.predict(X_train)
+pred_test = value_pipe.predict(X_test)
+print('Logistic Regression Model train accuracy score: {}'.format(
+    accuracy_score(y_train, pred_train)))
+print()
+print('Logistic Regression Model test accuracy score: {}'.format(
+    accuracy_score(y_test, pred_test)))
+print("""Logistic Regression Model test classification report: 
+
+ {}""".
+    format(classification_report(y_test, pred_test)))
+score = round(accuracy_score(y_test, pred_test), 3)
+cm = confusion_matrix(y_test, pred_test)
+sns.heatmap(cm, annot=True, fmt='.0f')
+plt.xlabel('Predicted Values')
+plt.ylabel('Actual Values')
+plt.title('Accuracy Score: {0}'.format(score), size=15)
+plt.show()
+probs = value_pipe.predict_proba(X_test)[:, 1]
+fpr, tpr, thresholds = roc_curve(y_test, probs)
+plt.figure(figsize=(8, 5))
+plt.plot([0, 1], [0, 1], 'k--')
+plt.plot(fpr, tpr)
+plt.xlabel('False Positive Rate = 1 - Specificity Score')
+plt.ylabel('True Positive Rate  = Recall Score')
+plt.title('ROC Curve')
+plt.show()
+
+
+
+================================================
+File: MathematicalCombination.py
+================================================
+"""
+### Feature Creation: MathematicalCombination
+The MathematicalCombination() applies basic mathematical operations **[‘sum’, ‘prod’, ‘mean’, ‘std’, ‘max’, ‘min’]** to multiple features, returning one or more additional features as a result.
+"""
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, roc_curve, roc_auc_score, classification_report, confusion_matrix
+from sklearn.pipeline import Pipeline as pipe
+from sklearn.preprocessing import StandardScaler
+from feature_engine.creation import MathFeatures
+from feature_engine.imputation import MeanMedianImputer
+pd.set_option('display.max_columns', None)
+data = pd.read_csv('../data/winequality-red.csv', sep=';')
+bins = [0, 5, 10]
+labels = [0, 1]
+data['quality_range'] = pd.cut(x=data['quality'], bins=bins, labels=labels)
+data[['quality_range', 'quality']].head(5)
+data.drop('quality', axis=1, inplace=True)
+math_combinator_mean = MathFeatures(variables=['fixed acidity',
+    'volatile acidity'], func=['mean'], new_variables_names=['avg_acidity'])
+math_combinator_sum = MathFeatures(variables=['total sulfur dioxide',
+    'sulphates'], func=['sum'], new_variables_names=['total_minerals'])
+math_combinator_mean.fit(data)
+data_t = math_combinator_mean.transform(data)
+data_t = math_combinator_sum.fit_transform(data_t)
+data_t.head()
+math_combinator_mean.variables_
+multiple_combinator = MathFeatures(variables=['fixed acidity',
+    'volatile acidity'], func=['mean', 'sum'], new_variables_names=None)
+multiple_combinator.fit(data)
+data_t = multiple_combinator.transform(data)
+data_t.head()
+multiple_combinator._get_new_features_name()
+X = data.drop(['quality_range'], axis=1)
+y = data.quality_range
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+    random_state=0, shuffle=True, stratify=y)
+X_train.shape, X_test.shape
+value_pipe = pipe([('math_combinator_mean', MathFeatures(variables=[
+    'fixed acidity', 'volatile acidity'], func=['mean'],
+    new_variables_names=['avg_acidity'])), ('math_combinator_sum',
+    MathFeatures(variables=['total sulfur dioxide', 'sulphates'], func=[
+    'sum'], new_variables_names=['total_minerals'])), ('scaler',
+    StandardScaler()), ('LogisticRegression', LogisticRegression())])
+value_pipe.fit(X_train, y_train)
+pred_train = value_pipe.predict(X_train)
+pred_test = value_pipe.predict(X_test)
+print('Logistic Regression Model train accuracy score: {}'.format(
+    accuracy_score(y_train, pred_train)))
+print()
+print('Logistic Regression Model test accuracy score: {}'.format(
+    accuracy_score(y_test, pred_test)))
+print("""Logistic Regression Model test classification report: 
+
+ {}""".
+    format(classification_report(y_test, pred_test)))
+score = round(accuracy_score(y_test, pred_test), 3)
+cm = confusion_matrix(y_test, pred_test)
+sns.heatmap(cm, annot=True, fmt='.0f')
+plt.xlabel('Predicted Values')
+plt.ylabel('Actual Values')
+plt.title('Accuracy Score: {0}'.format(score), size=15)
+plt.show()
+probs = value_pipe.predict_proba(X_test)[:, 1]
+fpr, tpr, thresholds = roc_curve(y_test, probs)
+plt.figure(figsize=(8, 5))
+plt.plot([0, 1], [0, 1], 'k--')
+plt.plot(fpr, tpr)
+plt.xlabel('False Positive Rate = 1 - Specificity Score')
+plt.ylabel('True Positive Rate  = Recall Score')
+plt.title('ROC Curve')
+plt.show()
+
+
+
+
+
+================================================
+File: datetime.txt
+================================================
+Directory structure:
+└── datetime/
+    └── DatetimeFeatures.py
+
+================================================
+File: DatetimeFeatures.py
+================================================
+"""
+# Datetime variable transformation
+
+The **DatetimeFeatures()** transformer is able to extract many different datetime features from existing datetime variables present in a dataframe. Some of these features are numerical, such as month, year, day of the week, week of the year, etc. and some are binary, such as whether that day was a weekend day or was the last day of its correspondent month. All features are cast to integer before adding them to the dataframe. <br>
+DatetimeFeatures() converts datetime variables whose dtype is originally object or categorical to a datetime format, but it does not work with variables whose original dtype is numerical. <br>
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from feature_engine.datetime import DatetimeFeatures
+data = pd.read_csv('../data/Metro_Interstate_Traffic_Volume.csv')
+data.head()
+data.shape
+pd.DataFrame({'type': data.dtypes, 'nan count': data.isna().sum()})
+dtfs = DatetimeFeatures(variables=None, features_to_extract=['day_of_month',
+    'hour'])
+dtfs.fit(data)
+dtfs.variables_
+data_transf = dtfs.transform(data)
+data_transf.head()
+dtfs = DatetimeFeatures(variables='date_time', features_to_extract=[
+    'day_of_month', 'hour'], drop_original=False)
+data_transf = dtfs.fit_transform(data)
+data_transf.head()
+dtfs = DatetimeFeatures(features_to_extract=None)
+data_transf = dtfs.fit_transform(data)
+data_transf.filter(regex='date_time*').head()
+dtfs = DatetimeFeatures(features_to_extract='all')
+data_transf = dtfs.fit_transform(data)
+data_transf.filter(regex='date_time*').head()
+data['holiday'] = data['holiday'].replace({pd.NA: None, pd.NaT: None, np.
+    nan: None})
+data_for_pipe = data.drop('holiday', axis=1)
+from sklearn.pipeline import Pipeline
+from feature_engine.selection import DropConstantFeatures
+pipe = Pipeline([('datetime_extraction', DatetimeFeatures(
+    features_to_extract=['year', 'day_of_month', 'minute', 'second'])), (
+    'drop_constants', DropConstantFeatures())])
+data_transf = pipe.fit_transform(data_for_pipe)
+data_transf.head()
+
+
+
+
+
+================================================
+File: discretisation.txt
+================================================
+Directory structure:
+└── discretisation/
+    ├── ArbitraryDiscretiser.py
+    ├── ArbitraryDiscretiser_plus_MeanEncoder.py
+    ├── DecisionTreeDiscretiser.py
+    ├── EqualFrequencyDiscretiser.py
+    ├── EqualFrequencyDiscretiser_plus_WoEEncoder.py
+    ├── EqualWidthDiscretiser.py
+    ├── EqualWidthDiscretiser_plus_OrdinalEncoder.py
+    ├── GeometricWidthDiscretiser.py
+    ├── GeometricWidthDiscretiser_plus_MeanEncoder.py
+    └── Model_Score_Discretisation.py
+
+================================================
+File: ArbitraryDiscretiser.py
+================================================
+"""
+# ArbitraryDiscretiser + MeanEncoder
+
+This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
+
+## ArbitraryDiscretiser
+
+The ArbitraryDiscretiser() divides continuous numerical variables into contiguous intervals arbitrarily defined by the user.
+
+The user needs to enter a dictionary with variable names as keys, and a list of the limits of the intervals as values. For example {'var1': [0, 10, 100, 1000],'var2': [5, 10, 15, 20]}.
+
+<b>Note:</b> Check out the ArbitraryDiscretiser notebook to learn more about this transformer.
+
+## MeanEncoder
+
+The MeanEncoder() replaces the labels of the variables by the mean value of the target for that label. <br>For example, in the variable colour, if the mean value of the binary target is 0.5 for the label blue, then blue is replaced by 0.5
+
+<b>Note:</b> Read MeanEncoder notebook to know more about this transformer
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.discretisation import ArbitraryDiscretiser
+plt.rcParams['figure.figsize'] = [15, 5]
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotArea', 'GrLivArea']].hist(bins=50)
+plt.show()
+"""
+Parameters
+----------
+
+binning_dict : dict
+    The dictionary with the variable : interval limits pairs, provided by the user.
+    A valid dictionary looks like this:
+
+     binning_dict = {'var1':[0, 10, 100, 1000], 'var2':[5, 10, 15, 20]}.
+
+return_object : bool, default=False
+    Whether the numbers in the discrete variable should be returned as
+    numeric or as object. The decision is made by the user based on
+    whether they would like to proceed the engineering of the variable as
+    if it was numerical or categorical.
+
+return_boundaries: bool, default=False
+    whether the output should be the interval boundaries. If True, it returns
+    the interval boundaries. If False, it returns integers.
+"""
+atd = ArbitraryDiscretiser(binning_dict={'LotArea': [-np.inf, 4000, 8000, 
+    12000, 16000, 20000, np.inf], 'GrLivArea': [-np.inf, 500, 1000, 1500, 
+    2000, 2500, np.inf]})
+atd.fit(X_train)
+atd.binner_dict_
+train_t = atd.transform(X_train)
+test_t = atd.transform(X_test)
+print(train_t['GrLivArea'].unique())
+print(train_t['LotArea'].unique())
+tmp = pd.concat([X_train[['LotArea', 'GrLivArea']], train_t[['LotArea',
+    'GrLivArea']]], axis=1)
+tmp.columns = ['LotArea', 'GrLivArea', 'LotArea_binned', 'GrLivArea_binned']
+tmp.head()
+plt.subplot(1, 2, 1)
+tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per bin')
+plt.subplot(1, 2, 2)
+tmp.groupby('LotArea_binned')['LotArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per bin')
+plt.show()
+atd = ArbitraryDiscretiser(binning_dict={'LotArea': [-np.inf, 4000, 8000, 
+    12000, 16000, 20000, np.inf], 'GrLivArea': [-np.inf, 500, 1000, 1500, 
+    2000, 2500, np.inf]}, return_boundaries=True)
+atd.fit(X_train)
+train_t = atd.transform(X_train)
+test_t = atd.transform(X_test)
+np.sort(np.ravel(train_t['GrLivArea'].unique()))
+np.sort(np.ravel(test_t['GrLivArea'].unique()))
+test_t.LotArea.value_counts(sort=False).plot.bar(figsize=(6, 4))
+plt.ylabel('Number of houses')
+plt.title('Number of houses per interval')
+plt.show()
+
+
+
+================================================
+File: ArbitraryDiscretiser_plus_MeanEncoder.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from feature_engine.discretisation import ArbitraryDiscretiser
+from feature_engine.encoding import MeanEncoder
+plt.rcParams['figure.figsize'] = [15, 5]
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived'], axis=1)
+y = data.survived
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['age', 'fare']].hist(bins=30)
+plt.show()
+arb_disc = ArbitraryDiscretiser(binning_dict={'age': [0, 18, 30, 50, 100],
+    'fare': [-1, 20, 40, 60, 80, 600]}, return_object=True)
+mean_enc = MeanEncoder(variables=['age', 'fare'])
+transformer = Pipeline(steps=[('ArbitraryDiscretiser', arb_disc), (
+    'MeanEncoder', mean_enc)])
+transformer.fit(X_train, y_train)
+transformer.named_steps['ArbitraryDiscretiser'].binner_dict_
+transformer.named_steps['MeanEncoder'].encoder_dict_
+train_t = transformer.transform(X_train)
+test_t = transformer.transform(X_test)
+test_t.head()
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('fare')['survived'].mean().plot()
+plt.title('Relationship between fare and target')
+plt.xlabel('fare')
+plt.ylabel('Mean of target')
+plt.show()
+
+
+
+================================================
+File: DecisionTreeDiscretiser.py
+================================================
+"""
+# DecisionTreeDiscretiser
+
+The DecisionTreeDiscretiser() divides continuous numerical variables into discrete, finite, values estimated by a decision tree.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.discretisation import DecisionTreeDiscretiser
+plt.rcParams['figure.figsize'] = [15, 5]
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotArea', 'GrLivArea']].hist(bins=50)
+plt.show()
+"""
+Parameters
+----------
+
+cv : int, default=3
+    Desired number of cross-validation fold to be used to fit the decision
+    tree.
+
+scoring: str, default='neg_mean_squared_error'
+    Desired metric to optimise the performance for the tree. Comes from
+    sklearn metrics. See DecisionTreeRegressor or DecisionTreeClassifier
+    model evaluation documentation for more options:
+    https://scikit-learn.org/stable/modules/model_evaluation.html
+
+variables : list
+    The list of numerical variables that will be transformed. If None, the
+    discretiser will automatically select all numerical type variables.
+
+regression : boolean, default=True
+    Indicates whether the discretiser should train a regression or a classification
+    decision tree.
+
+param_grid : dictionary, default=None
+    The list of parameters over which the decision tree should be optimised
+    during the grid search. The param_grid can contain any of the permitted
+    parameters for Scikit-learn's DecisionTreeRegressor() or
+    DecisionTreeClassifier().
+
+    If None, then param_grid = {'max_depth': [1, 2, 3, 4]}
+
+random_state : int, default=None
+    The random_state to initialise the training of the decision tree. It is one
+    of the parameters of the Scikit-learn's DecisionTreeRegressor() or
+    DecisionTreeClassifier(). For reproducibility it is recommended to set
+    the random_state to an integer.
+"""
+treeDisc = DecisionTreeDiscretiser(cv=3, scoring='neg_mean_squared_error',
+    variables=['LotArea', 'GrLivArea'], regression=True, random_state=29)
+treeDisc.fit(X_train, y_train)
+treeDisc.binner_dict_
+train_t = treeDisc.transform(X_train)
+test_t = treeDisc.transform(X_test)
+train_t['GrLivArea'].unique()
+train_t['LotArea'].unique()
+tmp = pd.concat([X_train[['LotArea', 'GrLivArea']], train_t[['LotArea',
+    'GrLivArea']]], axis=1)
+tmp.columns = ['LotArea', 'GrLivArea', 'LotArea_binned', 'GrLivArea_binned']
+tmp.head()
+plt.subplot(1, 2, 1)
+tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of houses per discrete value')
+plt.subplot(1, 2, 2)
+tmp.groupby('LotArea_binned')['LotArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.ylabel('Number of houses')
+plt.show()
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X_train, X_test, y_train, y_test = train_test_split(data.drop(['survived'],
+    axis=1), data['survived'], test_size=0.3, random_state=0)
+print(X_train.shape)
+print(X_test.shape)
+X_train[['fare', 'age']].dtypes
+treeDisc = DecisionTreeDiscretiser(cv=3, scoring='roc_auc', variables=[
+    'fare', 'age'], regression=False, param_grid={'max_depth': [1, 2]},
+    random_state=29)
+treeDisc.fit(X_train, y_train)
+treeDisc.binner_dict_
+train_t = treeDisc.transform(X_train)
+test_t = treeDisc.transform(X_test)
+train_t['age'].unique()
+train_t['fare'].unique()
+tmp = pd.concat([X_train[['fare', 'age']], train_t[['fare', 'age']]], axis=1)
+tmp.columns = ['fare', 'age', 'fare_binned', 'age_binned']
+tmp.head()
+plt.subplot(1, 2, 1)
+tmp.groupby('fare_binned')['fare'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of houses per discrete value')
+plt.subplot(1, 2, 2)
+tmp.groupby('age_binned')['age'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of houses per discrete value')
+plt.show()
+pd.concat([test_t, y_test], axis=1).groupby('age')['survived'].mean().plot(
+    figsize=(6, 4))
+plt.ylabel('Mean of target')
+plt.title('Relationship between fare and target')
+plt.show()
+pd.concat([test_t, y_test], axis=1).groupby('fare')['survived'].mean().plot(
+    figsize=(6, 4))
+plt.ylabel('Mean of target')
+plt.title('Relationship between fare and target')
+plt.show()
+from sklearn.datasets import load_iris
+data = pd.DataFrame(load_iris().data, columns=load_iris().feature_names).join(
+    pd.Series(load_iris().target, name='type'))
+data.head()
+data.type.unique()
+X_train, X_test, y_train, y_test = train_test_split(data.drop('type', axis=
+    1), data['type'], test_size=0.3, random_state=0)
+print(X_train.shape)
+print(X_test.shape)
+X_train[['sepal length (cm)', 'sepal width (cm)']].dtypes
+treeDisc = DecisionTreeDiscretiser(cv=3, scoring='accuracy', variables=[
+    'sepal length (cm)', 'sepal width (cm)'], regression=False, random_state=29
+    )
+treeDisc.fit(X_train, y_train)
+treeDisc.binner_dict_
+train_t = treeDisc.transform(X_train)
+test_t = treeDisc.transform(X_test)
+tmp = pd.concat([X_train[['sepal length (cm)', 'sepal width (cm)']],
+    train_t[['sepal length (cm)', 'sepal width (cm)']]], axis=1)
+tmp.columns = ['sepal length (cm)', 'sepal width (cm)', 'sepalLen_binned',
+    'sepalWid_binned']
+tmp.head()
+plt.subplot(1, 2, 1)
+tmp.groupby('sepalLen_binned')['sepal length (cm)'].count().plot.bar()
+plt.ylabel('Number of species')
+plt.title('Number of observations per discrete value')
+plt.subplot(1, 2, 2)
+tmp.groupby('sepalWid_binned')['sepal width (cm)'].count().plot.bar()
+plt.ylabel('Number of species')
+plt.title('Number of observations per discrete value')
+plt.show()
+
+
+
+================================================
+File: EqualFrequencyDiscretiser.py
+================================================
+"""
+# EqualFrequencyDiscretiser
+
+The EqualFrequencyDiscretiser() divides continuous numerical variables
+into contiguous equal frequency intervals, that is, intervals that contain
+approximately the same proportion of observations.
+
+The interval limits are determined by the quantiles. The number of intervals,
+i.e., the number of quantiles in which the variable should be divided is
+determined by the user.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.discretisation import EqualFrequencyDiscretiser
+plt.rcParams['figure.figsize'] = [15, 5]
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotArea', 'GrLivArea']].hist(bins=50)
+plt.show()
+"""
+Parameters
+----------
+
+q : int, default=10
+    Desired number of equal frequency intervals / bins. In other words the
+    number of quantiles in which the variables should be divided.
+
+variables : list
+    The list of numerical variables that will be discretised. If None, the
+    EqualFrequencyDiscretiser() will select all numerical variables.
+
+return_object : bool, default=False
+    Whether the numbers in the discrete variable should be returned as
+    numeric or as object. The decision is made by the user based on
+    whether they would like to proceed the engineering of the variable as
+    if it was numerical or categorical.
+
+return_boundaries: bool, default=False
+    whether the output should be the interval boundaries. If True, it returns
+    the interval boundaries. If False, it returns integers.
+"""
+efd = EqualFrequencyDiscretiser(q=10, variables=['LotArea', 'GrLivArea'])
+efd.fit(X_train)
+efd.binner_dict_
+train_t = efd.transform(X_train)
+test_t = efd.transform(X_test)
+train_t['GrLivArea'].unique()
+train_t['LotArea'].unique()
+tmp = pd.concat([X_train[['LotArea', 'GrLivArea']], train_t[['LotArea',
+    'GrLivArea']]], axis=1)
+tmp.columns = ['LotArea', 'GrLivArea', 'LotArea_binned', 'GrLivArea_binned']
+tmp.head()
+plt.subplot(1, 2, 1)
+tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per interval')
+plt.subplot(1, 2, 2)
+tmp.groupby('LotArea_binned')['LotArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per interval')
+plt.show()
+efd = EqualFrequencyDiscretiser(q=10, variables=['LotArea', 'GrLivArea'],
+    return_boundaries=True)
+efd.fit(X_train)
+train_t = efd.transform(X_train)
+test_t = efd.transform(X_test)
+np.sort(np.ravel(train_t['GrLivArea'].unique()))
+np.sort(np.ravel(test_t['GrLivArea'].unique()))
+
+
+
+================================================
+File: EqualFrequencyDiscretiser_plus_WoEEncoder.py
+================================================
+"""
+# EqualFrequencyDiscretiser + WoEEncoder
+
+This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
+
+## EqualFrequencyDiscretiser
+
+The EqualFrequencyDiscretiser() divides continuous numerical variables
+into contiguous equal frequency intervals, that is, intervals that contain
+approximately the same proportion of observations.
+
+The interval limits are determined by the quantiles. The number of intervals,
+i.e., the number of quantiles in which the variable should be divided is
+determined by the user.
+
+## WoEEncoder
+
+This encoder replaces the labels by the weight of evidence.
+
+**It only works for binary classification.**
+
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from feature_engine.discretisation import EqualFrequencyDiscretiser
+from feature_engine.encoding import WoEEncoder
+plt.rcParams['figure.figsize'] = [15, 5]
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived'], axis=1)
+y = data.survived
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['age', 'fare']].hist(bins=30)
+plt.show()
+efd = EqualFrequencyDiscretiser(q=4, variables=['age', 'fare'],
+    return_object=True)
+woe = WoEEncoder(variables=['age', 'fare'])
+transformer = Pipeline(steps=[('EqualFrequencyDiscretiser', efd), (
+    'WoEEncoder', woe)])
+transformer.fit(X_train, y_train)
+transformer.named_steps['EqualFrequencyDiscretiser'].binner_dict_
+transformer.named_steps['WoEEncoder'].encoder_dict_
+train_t = transformer.transform(X_train)
+test_t = transformer.transform(X_test)
+test_t.head()
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('fare')['survived'].mean().plot()
+plt.title('Relationship between fare and target')
+plt.xlabel('fare')
+plt.ylabel('Mean of target')
+plt.show()
+
+
+
+================================================
+File: EqualWidthDiscretiser.py
+================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.discretisation import EqualWidthDiscretiser
+plt.rcParams['figure.figsize'] = [15, 5]
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotArea', 'GrLivArea']].hist(bins=50)
+plt.show()
+"""
+Parameters
+----------
+
+bins : int, default=10
+    Desired number of equal width intervals / bins.
+
+variables : list
+    The list of numerical variables to transform. If None, the
+    discretiser will automatically select all numerical type variables.
+
+return_object : bool, default=False
+    Whether the numbers in the discrete variable should be returned as
+    numeric or as object. The decision should be made by the user based on
+    whether they would like to proceed the engineering of the variable as
+    if it was numerical or categorical.
+
+return_boundaries: bool, default=False
+    whether the output should be the interval boundaries. If True, it returns
+    the interval boundaries. If False, it returns integers.
+"""
+ewd = EqualWidthDiscretiser(bins=10, variables=['LotArea', 'GrLivArea'])
+ewd.fit(X_train)
+ewd.binner_dict_
+train_t = ewd.transform(X_train)
+test_t = ewd.transform(X_test)
+train_t['GrLivArea'].unique()
+tmp = pd.concat([X_train[['LotArea', 'GrLivArea']], train_t[['LotArea',
+    'GrLivArea']]], axis=1)
+tmp.columns = ['LotArea', 'GrLivArea', 'LotArea_binned', 'GrLivArea_binned']
+tmp.head()
+plt.subplot(1, 2, 1)
+tmp.groupby('GrLivArea_binned')['GrLivArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per interval')
+plt.subplot(1, 2, 2)
+tmp.groupby('LotArea_binned')['LotArea'].count().plot.bar()
+plt.ylabel('Number of houses')
+plt.title('Number of observations per interval')
+plt.show()
+ewd = EqualWidthDiscretiser(bins=10, variables=['LotArea', 'GrLivArea'],
+    return_boundaries=True)
+ewd.fit(X_train)
+train_t = ewd.transform(X_train)
+test_t = ewd.transform(X_test)
+np.sort(np.ravel(train_t['GrLivArea'].unique()))
+np.sort(np.ravel(test_t['GrLivArea'].unique()))
+val = np.sort(np.ravel(train_t['GrLivArea'].unique()))
+val
+import re
+
+
+def extract_upper_bound(interval_str):
+    match = re.search('([0-9.]+)\\]$', interval_str)
+    if match:
+        return float(match.group(1))
+    return None
+
+
+upper_bounds = [extract_upper_bound(x) for x in val if extract_upper_bound(
+    x) is not None]
+upper_bounds.sort()
+differences = np.diff(upper_bounds)
+print(differences)
+
+
+def extract_bounds(interval_str):
+    numbers = re.findall('[-+]?\\d*\\.\\d+|\\d+', interval_str)
+    if len(numbers) == 2:
+        return float(numbers[0]), float(numbers[1])
+    return None
+
+
+bounds = [extract_bounds(x) for x in val if extract_bounds(x) is not None]
+bounds.sort(key=lambda x: x[1])
+interval_sizes = [(bounds[i][1] - bounds[i][0]) for i in range(len(bounds))]
+print(interval_sizes)
+
+
+
+================================================
+File: EqualWidthDiscretiser_plus_OrdinalEncoder.py
+================================================
+"""
+# EqualWidthDiscretiser + OrdinalEncoder
+
+
+This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
+
+## EqualWidthDiscretiser
+
+The EqualWidthDiscretiser() divides continuous numerical variables into
+intervals of the same width, that is, equidistant intervals. Note that the
+proportion of observations per interval may vary.
+
+The number of intervals
+in which the variable should be divided must be indicated by the user.
+
+## OrdinalEncoder
+The OrdinalEncoder() will replace the variable labels by digits, from 1 to the number of different labels. 
+
+If we select "arbitrary", then the encoder will assign numbers as the labels appear in the variable (first come first served).
+
+If we select "ordered", the encoder will assign numbers following the mean of the target value for that label. So labels for which the mean of the target is higher will get the number 1, and those where the mean of the target is smallest will get the number n.
+
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from feature_engine.discretisation import EqualWidthDiscretiser
+from feature_engine.encoding import OrdinalEncoder
+plt.rcParams['figure.figsize'] = [15, 5]
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived'], axis=1)
+y = data.survived
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['age', 'fare']].hist(bins=30)
+plt.show()
+ewd = EqualWidthDiscretiser(bins=5, variables=['age', 'fare'],
+    return_object=True)
+oe = OrdinalEncoder(variables=['age', 'fare'])
+transformer = Pipeline(steps=[('EqualWidthDiscretiser', ewd), (
+    'OrdinalEncoder', oe)])
+transformer.fit(X_train, y_train)
+transformer.named_steps['EqualWidthDiscretiser'].binner_dict_
+transformer.named_steps['OrdinalEncoder'].encoder_dict_
+train_t = transformer.transform(X_train)
+test_t = transformer.transform(X_test)
+test_t.head()
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('fare')['survived'].mean().plot()
+plt.title('Relationship between fare and target')
+plt.xlabel('fare')
+plt.ylabel('Mean of target')
+plt.show()
+
+
+
+================================================
+File: GeometricWidthDiscretiser.py
+================================================
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.discretisation import GeometricWidthDiscretiser
+data = pd.read_csv('../data/housing.csv')
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+disc = GeometricWidthDiscretiser(bins=10, variables=['LotArea', 'GrLivArea'])
+disc.fit(X_train)
+train_t = disc.transform(X_train)
+test_t = disc.transform(X_test)
+disc.binner_dict_
+fig, ax = plt.subplots(1, 2)
+X_train['LotArea'].hist(ax=ax[0], bins=10)
+train_t['LotArea'].hist(ax=ax[1], bins=10)
+
+
+
+================================================
+File: GeometricWidthDiscretiser_plus_MeanEncoder.py
+================================================
+"""
+# GeometricWidthDiscretiser + MeanEncoder
+
+This is very useful for linear models, because by using discretisation + a monotonic encoding, we create monotonic variables with the target, from those that before were not originally. And this tends to help improve the performance of the linear model. 
+
+## GeometricWidthDiscretiser
+
+The GeometricWidthDiscretiser() divides continuous numerical variables into
+intervals of increasing width with equal increments. Note that the
+proportion of observations per interval may vary.
+
+The size of the interval will follow geometric progression.
+
+## MeanEncoder
+
+This encoder replaces the labels by the target mean.
+
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from feature_engine.discretisation import GeometricWidthDiscretiser
+from feature_engine.encoding import MeanEncoder
+plt.rcParams['figure.figsize'] = [15, 5]
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived'], axis=1)
+y = data.survived
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['age', 'fare']].hist(bins=30)
+plt.show()
+efd = GeometricWidthDiscretiser(bins=5, variables=['age', 'fare'],
+    return_object=True)
+woe = MeanEncoder(variables=['age', 'fare'])
+transformer = Pipeline(steps=[('GeometricWidthDiscretiser', efd), (
+    'MeanEncoder', woe)])
+transformer.fit(X_train, y_train)
+transformer.named_steps['GeometricWidthDiscretiser'].binner_dict_
+transformer.named_steps['MeanEncoder'].encoder_dict_
+train_t = transformer.transform(X_train)
+test_t = transformer.transform(X_test)
+test_t.head()
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('fare')['survived'].mean().plot()
+plt.title('Relationship between fare and target')
+plt.xlabel('fare')
+plt.ylabel('Mean of target')
+plt.show()
+
+
+
+================================================
+File: Model_Score_Discretisation.py
+================================================
+"""
+# Model Probability Discretization
+
+When we want to build a model to rank, we would like to know if the mean of our target variable increases with the model predicted probability. In order to check that, it is common to discretise the model probabilities that is provided by `model.predict_proba(X)[:, 1]`. If the mean target increases monotonically with each bin boundaries, than we can rest assure that our model is doing some sort of ranking.
+"""
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+X, y = load_breast_cancer(return_X_y=True, as_frame=True)
+X.head(3)
+np.unique(y)
+X.groupby(y).size()
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.6,
+    random_state=50)
+from sklearn.preprocessing import MinMaxScaler
+from feature_engine.wrappers import SklearnTransformerWrapper
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+features = X.columns.tolist()
+lr_model = Pipeline(steps=[('scaler', SklearnTransformerWrapper(transformer
+    =MinMaxScaler(), variables=features)), ('algorithm', LogisticRegression())]
+    )
+lr_model.fit(X_train, y_train)
+y_proba_train = lr_model.predict_proba(X_train)[:, 1]
+y_proba_test = lr_model.predict_proba(X_test)[:, 1]
+from sklearn.metrics import roc_auc_score
+print(f'Train ROCAUC: {roc_auc_score(y_train, y_proba_train):.4f}')
+print(f'Test ROCAUC: {roc_auc_score(y_test, y_proba_test):.4f}')
+predictions_df = pd.DataFrame({'model_prob': y_proba_test, 'target': y_test})
+predictions_df.head()
+from feature_engine.discretisation import EqualFrequencyDiscretiser
+disc = EqualFrequencyDiscretiser(q=4, variables=['model_prob'],
+    return_boundaries=True)
+predictions_df_t = disc.fit_transform(predictions_df)
+predictions_df_t.groupby('model_prob')['target'].mean().plot(kind='bar', rot=45
+    )
+from feature_engine.discretisation import DecisionTreeDiscretiser
+disc = DecisionTreeDiscretiser(cv=3, scoring='roc_auc', variables=[
+    'model_prob'], regression=False)
+predictions_df_t = disc.fit_transform(predictions_df, y_test)
+predictions_df_t.groupby('model_prob')['target'].mean().plot(kind='bar')
+predictions_df_t['model_prob'].value_counts().sort_index()
+import string
+tree_predictions = np.sort(predictions_df_t['model_prob'].unique())
+ratings_map = {tree_prediction: rating for rating, tree_prediction in zip(
+    string.ascii_uppercase, tree_predictions)}
+ratings_map
+predictions_df_t['cluster'] = predictions_df_t['model_prob'].map(ratings_map)
+predictions_df_t.head()
+predictions_df_t.groupby('cluster')['target'].mean().plot(kind='bar', rot=0,
+    title='Mean Target by Cluster')
+predictions_df_t['model_probability'] = predictions_df['model_prob']
+predictions_df_t.head()
+predictions_df_t.groupby('cluster').agg(lower_boundary=('model_probability',
+    'min'), upper_boundary=('model_probability', 'max')).round(3)
+
+
+
+
+
+================================================
+File: encoding.txt
+================================================
+Directory structure:
+└── encoding/
+    ├── CountFrequencyEncoder.py
+    ├── DecisionTreeEncoder.py
+    ├── MeanEncoder.py
+    ├── OneHotEncoder.py
+    ├── OrdinalEncoder.py
+    ├── PRatioEncoder.py
+    ├── RareLabelEncoder.py
+    ├── StringSimilarityEncoder.py
+    └── WoEEncoder.py
+
+================================================
+File: CountFrequencyEncoder.py
+================================================
+"""
+# CountFrequencyEncoder
+<p>The CountFrequencyEncoder() replaces categories by the count of
+observations per category or by the percentage of observations per category.<br>
+For example in the variable colour, if 10 observations are blue, blue will
+be replaced by 10. Alternatively, if 10% of the observations are blue, blue
+will be replaced by 0.1.</p>
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import CountFrequencyEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+"""
+Parameters
+----------
+
+encoding_method : str, default='count' 
+                Desired method of encoding.
+
+        'count': number of observations per category
+        
+        'frequency': percentage of observations per category
+
+variables : list
+          The list of categorical variables that will be encoded. If None, the 
+          encoder will find and transform all object type variables.
+"""
+count_encoder = CountFrequencyEncoder(encoding_method='frequency',
+    variables=['cabin', 'pclass', 'embarked'])
+count_encoder.fit(X_train)
+count_encoder.encoder_dict_
+train_t = count_encoder.transform(X_train)
+test_t = count_encoder.transform(X_test)
+test_t.head()
+test_t['pclass'].value_counts().plot.bar()
+plt.show()
+test_orig = count_encoder.inverse_transform(test_t)
+test_orig.head()
+count_enc = CountFrequencyEncoder(encoding_method='count', variables='cabin')
+count_enc.fit(X_train)
+count_enc.encoder_dict_
+train_t = count_enc.transform(X_train)
+test_t = count_enc.transform(X_test)
+test_t.head()
+count_enc = CountFrequencyEncoder(encoding_method='count')
+count_enc.fit(X_train)
+count_enc.variables
+train_t = count_enc.transform(X_train)
+test_t = count_enc.transform(X_test)
+test_t.head()
+
+
+
+================================================
+File: DecisionTreeEncoder.py
+================================================
+"""
+# DecisionTreeEncoder
+
+The DecisionTreeEncoder() encodes categorical variables with predictions of a decision tree model.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import DecisionTreeEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+"""
+Parameters
+    ----------
+
+    encoding_method: str, default='arbitrary'
+        The categorical encoding method that will be used to encode the original
+        categories to numerical values.
+
+        'ordered': the categories are numbered in ascending order according to
+        the target mean value per category.
+
+        'arbitrary' : categories are numbered arbitrarily.
+
+    cv : int, default=3
+        Desired number of cross-validation fold to be used to fit the decision
+        tree.
+
+    scoring: str, default='neg_mean_squared_error'
+        Desired metric to optimise the performance for the tree. Comes from
+        sklearn metrics. See the DecisionTreeRegressor or DecisionTreeClassifier
+        model evaluation documentation for more options:
+        https://scikit-learn.org/stable/modules/model_evaluation.html
+
+    regression : boolean, default=True
+        Indicates whether the encoder should train a regression or a classification
+        decision tree.
+
+    param_grid : dictionary, default=None
+        The list of parameters over which the decision tree should be optimised
+        during the grid search. The param_grid can contain any of the permitted
+        parameters for Scikit-learn's DecisionTreeRegressor() or
+        DecisionTreeClassifier().
+
+        If None, then param_grid = {'max_depth': [1, 2, 3, 4]}.
+
+    random_state : int, default=None
+        The random_state to initialise the training of the decision tree. It is one
+        of the parameters of the Scikit-learn's DecisionTreeRegressor() or
+        DecisionTreeClassifier(). For reproducibility it is recommended to set
+        the random_state to an integer.
+
+    variables : list, default=None
+        The list of categorical variables that will be encoded. If None, the
+        encoder will find and select all object type variables.
+"""
+tree_enc = DecisionTreeEncoder(encoding_method='arbitrary', cv=3, scoring=
+    'roc_auc', param_grid={'max_depth': [1, 2, 3, 4]}, regression=False,
+    variables=['cabin', 'pclass', 'embarked'])
+tree_enc.fit(X_train, y_train)
+tree_enc.encoder_
+train_t = tree_enc.transform(X_train)
+test_t = tree_enc.transform(X_test)
+test_t.sample(5)
+tree_enc = DecisionTreeEncoder(encoding_method='arbitrary', cv=3, scoring=
+    'roc_auc', param_grid={'max_depth': [1, 2, 3, 4]}, regression=False)
+tree_enc.fit(X_train, y_train)
+tree_enc.encoder_
+train_t = tree_enc.transform(X_train)
+test_t = tree_enc.transform(X_test)
+test_t.sample(5)
+
+
+
+================================================
+File: MeanEncoder.py
+================================================
+"""
+# MeanEncoder
+
+The MeanEncoder() replaces the labels of the variables by the mean value of the target for that label. <br>For example, in the variable colour, if the mean value of the binary target is 0.5 for the label blue, then blue is replaced by 0.5
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import MeanEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+"""
+Parameters
+----------  
+variables : list, default=None
+    The list of categorical variables that will be encoded. If None, the 
+    encoder will find and select all object type variables.
+"""
+mean_enc = MeanEncoder(variables=['cabin', 'pclass', 'embarked'])
+mean_enc.fit(X_train, y_train)
+mean_enc.encoder_dict_
+train_t = mean_enc.transform(X_train)
+test_t = mean_enc.transform(X_test)
+test_t.head()
+""" The MeanEncoder has the characteristic that return monotonic
+ variables, that is, encoded variables which values increase as the target increases"""
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('pclass')['survived'].mean().plot()
+plt.yticks(np.arange(0, 1.1, 0.1))
+plt.title('Relationship between pclass and target')
+plt.xlabel('Pclass')
+plt.ylabel('Mean of target')
+plt.show()
+mean_enc = MeanEncoder()
+mean_enc.fit(X_train, y_train)
+mean_enc.variables
+train_t = mean_enc.transform(X_train)
+test_t = mean_enc.transform(X_test)
+test_t.head()
+
+
+
+================================================
+File: OneHotEncoder.py
+================================================
+"""
+# OneHotEncoder
+Performs One Hot Encoding.
+
+The encoder can select how many different labels per variable to encode into binaries. When top_categories is set to None, all the categories will be transformed in binary variables. 
+
+However, when top_categories is set to an integer, for example 10, then only the 10 most popular categories will be transformed into binary, and the rest will be discarded.
+
+The encoder has also the possibility to create binary variables from all categories (drop_last = False), or remove the binary for the last category (drop_last = True), for use in linear models.
+
+Finally, the encoder has the option to drop the second dummy variable for binary variables. That is, if a categorical variable has 2 unique values, for example colour = ['black', 'white'], setting the parameter drop_last_binary=True, will automatically create only 1 binary for this variable, for example colour_black.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import OneHotEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+"""
+Parameters
+----------
+
+top_categories: int, default=None
+    If None, a dummy variable will be created for each category of the variable.
+    Alternatively, top_categories indicates the number of most frequent categories
+    to encode. Dummy variables will be created only for those popular categories
+    and the rest will be ignored. Note that this is equivalent to grouping all the
+    remaining categories in one group.
+    
+variables : list
+    The list of categorical variables that will be encoded. If None, the  
+    encoder will find and select all object type variables.
+    
+drop_last: boolean, default=False
+    Only used if top_categories = None. It indicates whether to create dummy
+    variables for all the categories (k dummies), or if set to True, it will
+    ignore the last variable of the list (k-1 dummies).
+"""
+ohe_enc = OneHotEncoder(top_categories=None, variables=['pclass', 'cabin',
+    'embarked'], drop_last=False)
+ohe_enc.fit(X_train)
+ohe_enc.encoder_dict_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+ohe_enc = OneHotEncoder(top_categories=2, variables=['pclass', 'cabin',
+    'embarked'], drop_last=False)
+ohe_enc.fit(X_train)
+ohe_enc.encoder_dict_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+ohe_enc = OneHotEncoder(top_categories=None, variables=['pclass', 'cabin',
+    'embarked'], drop_last=True)
+ohe_enc.fit(X_train)
+ohe_enc.encoder_dict_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+ohe_enc = OneHotEncoder(top_categories=None, drop_last=True)
+ohe_enc.fit(X_train)
+ohe_enc.variables
+ohe_enc.variables_
+ohe_enc.variables_binary_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+ohe_enc = OneHotEncoder(top_categories=None, drop_last=False,
+    drop_last_binary=True)
+ohe_enc.fit(X_train)
+ohe_enc.encoder_dict_
+ohe_enc.variables_binary_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+
+
+
+================================================
+File: OrdinalEncoder.py
+================================================
+"""
+# OrdinalEncoder
+The OrdinalEncoder() will replace the variable labels by digits, from 1 to the number of different labels. 
+
+If we select "arbitrary", then the encoder will assign numbers as the labels appear in the variable (first come first served).
+
+If we select "ordered", the encoder will assign numbers following the mean of the target value for that label. So labels for which the mean of the target is higher will get the number 1, and those where the mean of the target is smallest will get the number n.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import OrdinalEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+"""
+Parameters
+----------
+
+encoding_method : str, default='ordered' 
+    Desired method of encoding.
+
+    'ordered': the categories are numbered in ascending order according to
+    the target mean value per category.
+
+    'arbitrary' : categories are numbered arbitrarily.
+    
+variables : list, default=None
+    The list of categorical variables that will be encoded. If None, the 
+    encoder will find and select all object type variables.
+"""
+ordinal_enc = OrdinalEncoder(encoding_method='ordered', variables=['pclass',
+    'cabin', 'embarked'])
+ordinal_enc.fit(X_train, y_train)
+ordinal_enc.encoder_dict_
+train_t = ordinal_enc.transform(X_train)
+test_t = ordinal_enc.transform(X_test)
+test_t.sample(5)
+""" The OrdinalEncoder with encoding_method='order' has the characteristic that return monotonic
+ variables,that is, encoded variables which values increase as the target increases"""
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('pclass')['survived'].mean().plot()
+plt.xticks([0, 1, 2])
+plt.yticks(np.arange(0, 1.1, 0.1))
+plt.title('Relationship between pclass and target')
+plt.xlabel('Pclass')
+plt.ylabel('Mean of target')
+plt.show()
+ordinal_enc = OrdinalEncoder(encoding_method='arbitrary', variables=[
+    'pclass', 'cabin', 'embarked'])
+ordinal_enc.fit(X_train)
+ordinal_enc.encoder_dict_
+train_t = ordinal_enc.transform(X_train)
+test_t = ordinal_enc.transform(X_test)
+test_t.sample(5)
+ordinal_enc = OrdinalEncoder(encoding_method='arbitrary')
+ordinal_enc.fit(X_train)
+ordinal_enc.variables
+train_t = ordinal_enc.transform(X_train)
+test_t = ordinal_enc.transform(X_test)
+test_t.sample(5)
+
+
+
+================================================
+File: PRatioEncoder.py
+================================================
+"""
+# PRatioEncoder
+
+The PRatioEncoder() replaces categories by the ratio of the probability of the
+target = 1 and the probability of the target = 0.<br>
+
+The target probability ratio is given by: p(1) / p(0).
+
+The log of the target probability ratio is: np.log( p(1) / p(0) )
+#### It only works for binary classification.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import PRatioEncoder
+from feature_engine.encoding import RareLabelEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+rare_encoder = RareLabelEncoder(tol=0.03, n_categories=2, variables=[
+    'cabin', 'pclass', 'embarked'])
+rare_encoder.fit(X_train)
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_test)
+"""
+Parameters
+----------
+
+encoding_method : str, default=woe
+    Desired method of encoding.
+
+    'ratio' : probability ratio
+
+    'log_ratio' : log probability ratio
+
+variables : list, default=None
+    The list of categorical variables that will be encoded. If None, the
+    encoder will find and select all object type variables.
+"""
+Ratio_enc = PRatioEncoder(encoding_method='ratio', variables=['cabin',
+    'pclass', 'embarked'])
+Ratio_enc.fit(train_t, y_train)
+Ratio_enc.encoder_dict_
+train_t = Ratio_enc.transform(train_t)
+test_t = Ratio_enc.transform(test_t)
+test_t.sample(5)
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_test)
+logRatio_enc = PRatioEncoder(encoding_method='log_ratio', variables=[
+    'cabin', 'pclass', 'embarked'])
+logRatio_enc.fit(train_t, y_train)
+logRatio_enc.encoder_dict_
+train_t = logRatio_enc.transform(train_t)
+test_t = logRatio_enc.transform(test_t)
+test_t.sample(5)
+""" The PRatioEncoder(encoding_method='ratio' or 'log_ratio') has the characteristic that return monotonic
+ variables, that is, encoded variables which values increase as the target increases"""
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('pclass')['survived'].mean().plot()
+plt.yticks(np.arange(0, 1.1, 0.1))
+plt.title('Relationship between pclass and target')
+plt.xlabel('Pclass')
+plt.ylabel('Mean of target')
+plt.show()
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_test)
+logRatio_enc = PRatioEncoder(encoding_method='log_ratio')
+logRatio_enc.fit(train_t, y_train)
+train_t = logRatio_enc.transform(train_t)
+test_t = logRatio_enc.transform(test_t)
+test_t.sample(5)
+
+
+
+================================================
+File: RareLabelEncoder.py
+================================================
+"""
+# RareLabelEncoder
+
+The RareLabelEncoder() groups labels that show a small number of observations in the dataset into a new category called 'Rare'. This helps to avoid overfitting.
+
+The argument ' tol ' indicates the percentage of observations that the label needs to have in order not to be re-grouped into the "Rare" label.<br> The argument n_categories indicates the minimum number of distinct categories that a variable needs to have for any of the labels to be re-grouped into 'Rare'.<br><br>
+#### Note
+If the number of labels is smaller than n_categories, then the encoder will not group the labels for that variable.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import RareLabelEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+"""
+Parameters
+----------
+
+tol: float, default=0.05
+    the minimum frequency a label should have to be considered frequent.
+    Categories with frequencies lower than tol will be grouped.
+
+n_categories: int, default=10
+    the minimum number of categories a variable should have for the encoder
+    to find frequent labels. If the variable contains less categories, all
+    of them will be considered frequent.
+
+max_n_categories: int, default=None
+    the maximum number of categories that should be considered frequent.
+    If None, all categories with frequency above the tolerance (tol) will be
+    considered.
+
+variables : list, default=None
+    The list of categorical variables that will be encoded. If None, the 
+    encoder will find and select all object type variables.
+
+replace_with : string, default='Rare'
+    The category name that will be used to replace infrequent categories.
+"""
+rare_encoder = RareLabelEncoder(tol=0.05, n_categories=5, variables=[
+    'cabin', 'pclass', 'embarked'])
+rare_encoder.fit(X_train)
+rare_encoder.encoder_dict_
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_train)
+test_t.head()
+test_t.cabin.value_counts()
+rare_encoder = RareLabelEncoder(tol=0.03, replace_with='Other', variables=[
+    'cabin', 'pclass', 'embarked'], n_categories=2)
+rare_encoder.fit(X_train)
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_train)
+test_t.sample(5)
+rare_encoder.encoder_dict_
+test_t.cabin.value_counts()
+rare_encoder = RareLabelEncoder(tol=0.03, variables=['cabin', 'pclass',
+    'embarked'], n_categories=2, max_n_categories=3)
+rare_encoder.fit(X_train)
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_train)
+test_t.sample(5)
+rare_encoder.encoder_dict_
+len(X_train['pclass'].unique()), len(X_train['sex'].unique()), len(X_train[
+    'embarked'].unique())
+rare_encoder = RareLabelEncoder(tol=0.03, n_categories=3)
+rare_encoder.fit(X_train)
+rare_encoder.encoder_dict_
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_train)
+test_t.sample(5)
+
+
+
+================================================
+File: StringSimilarityEncoder.py
+================================================
+import string
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import StringSimilarityEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    translate_table = str.maketrans('', '', string.punctuation)
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['name'] = data['name'].str.strip().str.translate(translate_table
+        ).str.replace('  ', ' ').str.lower()
+    data['ticket'] = data['ticket'].str.strip().str.translate(translate_table
+        ).str.replace('  ', ' ').str.lower()
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X_train, X_test, y_train, y_test = train_test_split(data.drop(['survived',
+    'sex', 'cabin', 'embarked'], axis=1), data['survived'], test_size=0.3,
+    random_state=0)
+encoder = StringSimilarityEncoder(top_categories=2, variables=['name',
+    'ticket'])
+encoder.fit(X_train)
+encoder.encoder_dict_
+train_t = encoder.transform(X_train)
+test_t = encoder.transform(X_test)
+train_t.head(5)
+test_t.head(5)
+fig, ax = plt.subplots(2, 1)
+train_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_347082', sharex=
+    True, title='Ticket encoding in train', ax=ax[0])
+test_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_347082', sharex=
+    True, title='Ticket encoding in test', ax=ax[1])
+encoder = StringSimilarityEncoder(top_categories=2, missing_values='ignore',
+    variables=['name', 'ticket'])
+encoder.fit(X_train)
+encoder.encoder_dict_
+train_t = encoder.transform(X_train)
+test_t = encoder.transform(X_test)
+train_t.head(5)
+test_t.head(5)
+fig, ax = plt.subplots(2, 1)
+train_t.plot(kind='scatter', x='home.dest_new york ny', y=
+    'home.dest_london', sharex=True, title=
+    'Home destination encoding in train', ax=ax[0])
+test_t.plot(kind='scatter', x='home.dest_new york ny', y='home.dest_london',
+    sharex=True, title='Home destination encoding in test', ax=ax[1])
+from sklearn.decomposition import PCA
+encoder = StringSimilarityEncoder(top_categories=None, handle_missing=
+    'impute', variables=['home.dest'])
+encoder.fit(X_train)
+train_t = encoder.transform(X_train)
+train_t.shape
+home_encoded = train_t.filter(like='home.dest')
+pca = PCA(n_components=0.9)
+pca.fit(home_encoded)
+train_compressed = pca.transform(home_encoded)
+train_compressed.shape
+
+
+
+================================================
+File: WoEEncoder.py
+================================================
+"""
+## WoEEncoder (weight of evidence)
+
+This encoder replaces the labels by the weight of evidence 
+#### It only works for binary classification.
+
+The weight of evidence is given by: log( p(1) / p(0) )
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import WoEEncoder
+from feature_engine.encoding import RareLabelEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+rare_encoder = RareLabelEncoder(tol=0.03, n_categories=2, variables=[
+    'cabin', 'pclass', 'embarked'])
+rare_encoder.fit(X_train)
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_test)
+woe_enc = WoEEncoder(variables=['cabin', 'pclass', 'embarked'])
+woe_enc.fit(train_t, y_train)
+woe_enc.encoder_dict_
+train_t = woe_enc.transform(train_t)
+test_t = woe_enc.transform(test_t)
+test_t.sample(5)
+""" The WoEEncoder has the characteristic that return monotonic
+ variables, that is, encoded variables which values increase as the target increases"""
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('pclass')['survived'].mean().plot()
+plt.yticks(np.arange(0, 1.1, 0.1))
+plt.title('Relationship between pclass and target')
+plt.xlabel('Pclass')
+plt.ylabel('Mean of target')
+plt.show()
+ratio_enc = WoEEncoder()
+ratio_enc.fit(train_t, y_train)
+train_t = ratio_enc.transform(train_t)
+test_t = ratio_enc.transform(test_t)
+test_t.head()
+
+
+
+
+
+================================================
+File: imputation.txt
+================================================
+Directory structure:
+└── imputation/
+    ├── AddMissingIndicator.py
+    ├── ArbitraryNumberImputer.py
+    ├── CategoricalImputer.py
+    ├── DropMissingData.py
+    ├── EndTailImputer.py
+    ├── MeanMedianImputer.py
+    └── RandomSampleImputer.py
+
+================================================
+File: AddMissingIndicator.py
+================================================
+"""
+# AddMissingIndicator
+
+AddMissingIndicator adds additional binary variables indicating missing data (thus, called missing indicators). The binary variables take the value 1 if the observation's value is missing, or 0 otherwise. AddMissingIndicator adds 1 binary variable per variable.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from feature_engine.imputation import AddMissingIndicator, MeanMedianImputer, CategoricalImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].isnull().mean()
+imputer = AddMissingIndicator(variables=['Alley', 'MasVnrType',
+    'LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.variables_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['Alley_na', 'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']].head(
+    )
+train_t[['Alley_na', 'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']].mean(
+    )
+X_train[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].dtypes
+pipe = Pipeline([('indicators', AddMissingIndicator(variables=['Alley',
+    'MasVnrType', 'LotFrontage', 'MasVnrArea'])), ('imputer_num',
+    MeanMedianImputer(imputation_method='median', variables=['LotFrontage',
+    'MasVnrArea'])), ('imputer_cat', CategoricalImputer(imputation_method=
+    'frequent', variables=['Alley', 'MasVnrType']))])
+pipe.fit(X_train)
+pipe.named_steps['indicators'].variables_
+pipe.named_steps['imputer_num'].imputer_dict_
+pipe.named_steps['imputer_cat'].imputer_dict_
+train_t = pipe.transform(X_train)
+test_t = pipe.transform(X_test)
+vars_ = ['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea', 'Alley_na',
+    'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']
+train_t[vars_].head()
+train_t[vars_].isnull().sum()
+imputer = AddMissingIndicator(variables=None, missing_only=True)
+imputer.fit(X_train)
+imputer.variables
+imputer.variables_
+len(imputer.variables_)
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+X_train.shape, train_t.shape
+train_t.head()
+imputer = AddMissingIndicator(variables=None, missing_only=False)
+imputer.fit(X_train)
+len(imputer.variables_)
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+X_train.shape, train_t.shape
+pipe = Pipeline([('indicators', AddMissingIndicator(missing_only=True)), (
+    'imputer_num', MeanMedianImputer(imputation_method='median')), (
+    'imputer_cat', CategoricalImputer(imputation_method='frequent'))])
+pipe.fit(X_train)
+pipe.named_steps['indicators'].variables_
+pipe.named_steps['imputer_num'].imputer_dict_
+pipe.named_steps['imputer_cat'].imputer_dict_
+train_t = pipe.transform(X_train)
+test_t = pipe.transform(X_test)
+train_t.isnull().sum()
+[v for v in train_t.columns if train_t[v].isnull().sum() > 1]
+
+
+
+================================================
+File: ArbitraryNumberImputer.py
+================================================
+"""
+# ArbitraryNumberImputer
+
+ArbitraryNumberImputer replaces NA by an arbitrary value. It works for numerical variables. The arbitrary value needs to be defined by the user.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import ArbitraryNumberImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+imputer = ArbitraryNumberImputer(arbitrary_number=-999, variables=[
+    'LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.arbitrary_number
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].min()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = ArbitraryNumberImputer(imputer_dict={'LotFrontage': -678,
+    'MasVnrArea': -789})
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].min()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = ArbitraryNumberImputer(arbitrary_number=-1)
+imputer.fit(X_train)
+imputer.variables_
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+[v for v in train_t.columns if train_t[v].dtypes != 'O' and train_t[v].
+    isnull().sum() > 1]
+imputer.get_feature_names_out()
+
+
+
+================================================
+File: CategoricalImputer.py
+================================================
+"""
+# Missing value imputation: CategoricalImputer
+
+
+CategoricalImputer performs imputation of categorical variables. It replaces missing values by an arbitrary label "Missing" (default) or any other label entered by the user. Alternatively, it imputes missing data with the most frequent category.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import CategoricalImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['Alley', 'MasVnrType']].isnull().mean()
+X_train['MasVnrType'].value_counts().plot.bar()
+plt.ylabel('Number of observations')
+plt.title('MasVnrType')
+imputer = CategoricalImputer(imputation_method='missing', variables=[
+    'Alley', 'MasVnrType'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+test_t['MasVnrType'].value_counts().plot.bar()
+plt.ylabel('Number of observations')
+plt.title('Imputed MasVnrType')
+test_t['Alley'].value_counts().plot.bar()
+plt.ylabel('Number of observations')
+plt.title('Imputed Alley')
+imputer = CategoricalImputer(variables='MasVnrType', fill_value=
+    'this_is_missing')
+train_t = imputer.fit_transform(X_train)
+test_t = imputer.transform(X_test)
+imputer.imputer_dict_
+test_t['MasVnrType'].value_counts().plot.bar()
+plt.ylabel('Number of observations')
+plt.title('Imputed MasVnrType')
+imputer = CategoricalImputer(imputation_method='frequent', variables=[
+    'Alley', 'MasVnrType'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+X_train['MasVnrType'].value_counts()
+train_t['MasVnrType'].value_counts()
+imputer = CategoricalImputer(imputation_method='frequent')
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+[v for v in train_t.columns if train_t[v].dtypes == 'O' and train_t[v].
+    isnull().sum() > 1]
+imputer.get_feature_names_out()
+
+
+
+================================================
+File: DropMissingData.py
+================================================
+"""
+# Missing value imputation: DropMissingData
+
+Deletes rows with missing values. DropMissingData works both with numerical and categorical variables.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import DropMissingData
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+imputer = DropMissingData(variables=['Alley', 'MasVnrType', 'LotFrontage',
+    'MasVnrArea'], missing_only=False)
+imputer.fit(X_train)
+imputer.variables_
+X_train[imputer.variables].isna().sum()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[imputer.variables].isna().sum()
+X_train.shape
+train_t.shape
+tmp = imputer.return_na_data(X_train)
+tmp.shape
+1022 - 963
+imputer = DropMissingData(variables=['Alley', 'MasVnrType', 'LotFrontage',
+    'MasVnrArea'], missing_only=False, threshold=0.5)
+imputer.fit(X_train)
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[imputer.variables].isna().sum()
+imputer = DropMissingData(missing_only=True)
+imputer.fit(X_train)
+imputer.variables_
+X_train[imputer.variables_].isna().sum()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[imputer.variables_].isna().sum()
+train_t.shape
+imputer = DropMissingData(missing_only=True, threshold=0.75)
+imputer.fit(X_train)
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t.shape
+
+
+
+================================================
+File: EndTailImputer.py
+================================================
+"""
+# EndTailImputer
+
+The EndTailImputer() replaces missing data by a value at either tail of the distribution. It automatically determines the value to be used in the imputation using the mean plus or minus a factor of the standard deviation, or using the inter-quartile range proximity rule. Alternatively, it can use a factor of the maximum value.
+The EndTailImputer() is in essence, very similar to the ArbitraryNumberImputer, but it selects the value to use fr the imputation automatically, instead of having the user pre-define them.
+It works only with numerical variables.
+"""
+
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import EndTailImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+imputer = EndTailImputer(imputation_method='gaussian', tail='right', fold=3,
+    variables=['LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t['LotFrontage'].isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = EndTailImputer(imputation_method='iqr', tail='left', fold=3,
+    variables=['LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = EndTailImputer(imputation_method='max', fold=3, variables=[
+    'LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+X_train[imputer.variables_].max()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = EndTailImputer()
+imputer.imputation_method
+imputer.tail
+imputer.fold
+imputer.fit(X_train)
+imputer.variables_
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+[v for v in train_t.columns if train_t[v].dtypes != 'O' and train_t[v].
+    isnull().sum() > 1]
+
+
+
+================================================
+File: MeanMedianImputer.py
+================================================
+"""
+# Missing value imputation: MeanMedianImputer
+
+The MeanMedianImputer() replaces missing data by the mean or median value of the variable. It works only with numerical variables.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import MeanMedianImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+imputer = MeanMedianImputer(imputation_method='median', variables=[
+    'LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+X_train[['LotFrontage', 'MasVnrArea']].median()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = MeanMedianImputer(imputation_method='mean')
+imputer.fit(X_train)
+imputer.variables_
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+test_t[imputer.variables_].isnull().sum()
+
+
+
+================================================
+File: RandomSampleImputer.py
+================================================
+"""
+# Missing value imputation: RandomSampleImputer
+
+The RandomSampleImputer extracts a random sample of observations where data is available, and uses it to replace the NA. It is suitable for numerical and categorical variables.
+To control the random sample extraction, there are various ways to set a seed and ensure or maximize reproducibility.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import RandomSampleImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+imputer = RandomSampleImputer(variables=['Alley', 'MasVnrType',
+    'LotFrontage', 'MasVnrArea'], random_state=10, seed='general')
+imputer.fit(X_train)
+imputer.X_.head()
+X_train[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].isnull().mean()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].isnull().mean()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = RandomSampleImputer(random_state=['MSSubClass', 'YrSold'], seed=
+    'observation', seeding_method='add', variables=None)
+imputer.fit(X_train)
+imputer.X_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+test_t.isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+
+...
