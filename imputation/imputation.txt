@@ -1,1549 +1,448 @@
-// CategoricalImputer.py
-// CategoricalImputer.py
-# Generated from: CategoricalImputer.ipynb
+Directory structure:
+└── imputation/
+    ├── AddMissingIndicator.py
+    ├── ArbitraryNumberImputer.py
+    ├── CategoricalImputer.py
+    ├── DropMissingData.py
+    ├── EndTailImputer.py
+    ├── MeanMedianImputer.py
+    └── RandomSampleImputer.py
 
-# # Missing value imputation: CategoricalImputer
-#
-#
-# CategoricalImputer performs imputation of categorical variables. It replaces missing values by an arbitrary label "Missing" (default) or any other label entered by the user. Alternatively, it imputes missing data with the most frequent category.
-#
-# **For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:**
-#
-# [Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3](http://jse.amstat.org/v19n3/decock.pdf)
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
+================================================
+File: AddMissingIndicator.py
+================================================
+"""
+# AddMissingIndicator
 
-
-# ## Version
-
-
-# Make sure you are using this 
-# Feature-engine version.
-
+AddMissingIndicator adds additional binary variables indicating missing data (thus, called missing indicators). The binary variables take the value 1 if the observation's value is missing, or 0 otherwise. AddMissingIndicator adds 1 binary variable per variable.
+"""
 import feature_engine
-
 feature_engine.__version__
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-
-from  feature_engine.imputation import CategoricalImputer
-
-
-# Read the separate files
-train_df = pd.read_csv('../data/house-prices/train.csv')
-test_df = pd.read_csv('../data/house-prices/test.csv')
-
-# Separate features and target in training data
-X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
-y_train = train_df['SalePrice']
-
-# For test data, you might not have the target variable
-X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
-
-print("X_train :", X_train.shape)
-print("X_test :", X_test.shape)
-
-
-# ## Check missing data
-
-
-# These are categorical variables with missing data
-
-X_train[['Alley', 'MasVnrType']].isnull().mean()
-
-
-# Number of observations per category
-
-X_train['MasVnrType'].value_counts().plot.bar()
-plt.ylabel('Number of observations')
-plt.title('MasVnrType')
-
-
-# ## Imputat with string missing
-#
-# We replace missing data with the string "Missing".
-
-
-imputer = CategoricalImputer(
-    imputation_method='missing',
-    variables=['Alley', 'MasVnrType'])
-
-imputer.fit(X_train)
-
-
-# We impute all variables with the
-# string 'Missing'
-
-imputer.imputer_dict_
-
-
-# Perform imputation.
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Observe the new category 'Missing'
-
-test_t['MasVnrType'].value_counts().plot.bar()
-
-plt.ylabel('Number of observations')
-plt.title('Imputed MasVnrType')
-
-
-test_t['Alley'].value_counts().plot.bar()
-
-plt.ylabel('Number of observations')
-plt.title('Imputed Alley')
-
-
-# ## Impute with another string
-#
-# We can also enter a specific string for the imputation instead of the default 'Missing'.
-
-
-imputer = CategoricalImputer(
-    variables='MasVnrType',
-    fill_value="this_is_missing",
-)
-
-
-# We can also fit and transform the train set
-# in one line of code
-train_t = imputer.fit_transform(X_train)
-
-
-# and then transform the test set
-test_t = imputer.transform(X_test)
-
-
-# let's check the current imputation
-# dictionary
-
-imputer.imputer_dict_
-
-
-# After the imputation we see the new category
-
-test_t['MasVnrType'].value_counts().plot.bar()
-
-plt.ylabel('Number of observations')
-plt.title('Imputed MasVnrType')
-
-
-# ## Frequent Category Imputation
-#
-# We can also replace missing values with the most frequent category.
-
-
-imputer = CategoricalImputer(
-    imputation_method='frequent',
-    variables=['Alley', 'MasVnrType'],
-)
-
-
-# Find most frequent category
-
-imputer.fit(X_train)
-
-
-# In this attribute we find the most frequent category
-# per variable to impute.
-
-imputer.imputer_dict_
-
-
-# Impute variables
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Let's count the number of observations per category
-# in the original variable.
-
-X_train['MasVnrType'].value_counts()
-
-
-# note that we have a few more observations in the 
-# most frequent category, which for this variable
-# is 'None', after the transformation.
-
-train_t['MasVnrType'].value_counts()
-
-
-# The number of observations for `None` in `MasVnrType` increased from 609 to 614, thanks to replacing the NA with this label.
-
-
-# ## Automatically select categorical variables
-#
-# We can impute all catetgorical variables automatically, either with a string or with the most frequent category.
-#
-# To do so, we need to leave the parameter `variables` to `None`.
-
-
-# Impute all categorical variables with 
-# the most frequent category
-
-imputer = CategoricalImputer(imputation_method='frequent')
-
-
-# with fit, the transformer identifies the categorical variables
-# in the train set, and their most frequent category.
-imputer.fit(X_train)
-
-# Here we find the imputation values for each
-# categorical variable.
-
-imputer.imputer_dict_
-
-
-# With transform we replace missing data.
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Sanity check:
-
-# No categorical variable with NA is left in the
-# transformed data.
-
-[v for v in train_t.columns if train_t[v].dtypes ==
-    'O' and train_t[v].isnull().sum() > 1]
-
-
-# We can also return the name of the final features in
-# the transformed data
-imputer.get_feature_names_out()
-
-
-
-// ---------------------------------------------------
-
-// DropMissingData.py
-// DropMissingData.py
-# Generated from: DropMissingData.ipynb
-
-# # Missing value imputation: DropMissingData
-#
-# Deletes rows with missing values.
-#
-# DropMissingData works both with numerical and categorical variables.
-#
-# **For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:**
-#
-# [Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3](http://jse.amstat.org/v19n3/decock.pdf)
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
-
-
-# ## Version
-
-
-# Make sure you are using this 
-# Feature-engine version.
-
-import feature_engine
-
-feature_engine.__version__
-
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-
-from feature_engine.imputation import DropMissingData
-
-
-# Read the separate files
-train_df = pd.read_csv('../data/house-prices/train.csv')
-test_df = pd.read_csv('../data/house-prices/test.csv')
-
-# Separate features and target in training data
-X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
-y_train = train_df['SalePrice']
-
-# For test data, you might not have the target variable
-X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
-
-print("X_train :", X_train.shape)
-print("X_test :", X_test.shape)
-
-
-# ## Drop data based on specific variables.
-#
-# We can drop observations that show NA in any of a subset of variables.
-
-
-# Drop data when there are NA in any of the indicated variables
-
-imputer = DropMissingData(
-    variables=['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea'],
-    missing_only=False,
-)
-
-
-imputer.fit(X_train)
-
-
-# variables from which observations with NA will be deleted
-
-imputer.variables_
-
-
-# Number of observations with NA before the transformation
-
-X_train[imputer.variables].isna().sum()
-
-
-# After the transformation the rows with NA values are 
-# deleted form the dataframe
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Number of observations with NA after transformation
-
-train_t[imputer.variables].isna().sum()
-
-
-# Shape of dataframe before transformation
-
-X_train.shape
-
-
-# Shape of dataframe after transformation
-
-train_t.shape
-
-
-# The "return_na_data()" method, returns a dataframe that contains
-# the observations with NA. 
-
-# That is, the portion of the data that is dropped when
-# we apply the transform() method.
-
-tmp = imputer.return_na_data(X_train)
-
-tmp.shape
-
-
-# total obs - obs with NA = final dataframe shape
-#  after the transformation
-
-1022-963
-
-
-# Sometimes, it is useful to retain the observation with NA in the production environment, to log which
-# observations are not being scored by the model for example.
-
-
-# ## Drop data when variables contain %  of NA
-#
-# We can drop observations if they contain less than a required percentage of values in a subset of observations.
-
-
-# Drop data if an observation contains NA in 
-# 2 of the 4 indicated variables (50%).
-
-imputer = DropMissingData(
-    variables=['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea'],
-    missing_only=False,
-    threshold=0.5,
-)
-
-
-imputer.fit(X_train)
-
-
-# After the transformation the rows with NA values are 
-# deleted form the dataframe
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Number of observations with NA after transformation
-
-train_t[imputer.variables].isna().sum()
-
-
-# We see that not all missing observations were dropped, because we required the observation to have NA in more than 1 of the variables at the time. 
-
-
-# ## Automatically select all variables
-#
-# We can drop obserations if they show NA in any variable in the dataset.
-#
-# When the parameter `variables` is left to None and the parameter `missing_only` is left to True, the imputer will evaluate observations based of all variables with missing data.
-#
-# When the parameter `variables` is left to None and the parameter `missing_only` is switched to False, the imputer will evaluate observations based of all variables.
-#
-# It is good practice to use `missing_only=True` when we set `variables=None`, so that the transformer handles the imputation automatically in a meaningful way.
-#
-# ### Automatically find variables with NA
-
-
-# Find variables with NA
-
-imputer = DropMissingData(missing_only=True)
-
-imputer.fit(X_train)
-
-
-# variables with NA in the train set
-
-imputer.variables_
-
-
-# Number of observations with NA
-
-X_train[imputer.variables_].isna().sum()
-
-
-# After the transformation the rows with NA are deleted form the dataframe
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Number of observations with NA after the transformation
-
-train_t[imputer.variables_].isna().sum()
-
-
-# in this case, all observations will be dropped
-# because all of them show NA at least in 1 variable
-
-train_t.shape
-
-
-# ## Drop rows with % of missing data
-#
-# Not to end up with an empty dataframe, let's drop rows that have less than 75% of the variables with values.
-
-
-# Find variables with NA
-
-imputer = DropMissingData(
-    missing_only=True,
-    threshold=0.75,
-)
-
-imputer.fit(X_train)
-
-
-# After the transformation the rows with NA are deleted form the dataframe
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-train_t.shape
-
-
-# Now, we do have some data left.
-
-
-
-// ---------------------------------------------------
-
-// EndTailImputer.py
-// EndTailImputer.py
-# Generated from: EndTailImputer.ipynb
-
-# # EndTailImputer
-#
-# The EndTailImputer() replaces missing data by a value at either tail of the distribution. It automatically determines the value to be used in the imputation using the mean plus or minus a factor of the standard deviation, or using the inter-quartile range proximity rule. Alternatively, it can use a factor of the maximum value.
-#
-# The EndTailImputer() is in essence, very similar to the ArbitraryNumberImputer, but it selects the value to use fr the imputation automatically, instead of having the user pre-define them.
-#
-# It works only with numerical variables.
-#
-# **For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:**
-#
-# [Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3](http://jse.amstat.org/v19n3/decock.pdf)
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
-
-
-# ## Version
-
-
-# Make sure you are using this 
-# Feature-engine version.
-
-import feature_engine
-
-feature_engine.__version__
-
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-
-from feature_engine.imputation import EndTailImputer
-
-
-# Read the separate files
-train_df = pd.read_csv('../data/house-prices/train.csv')
-test_df = pd.read_csv('../data/house-prices/test.csv')
-
-# Separate features and target in training data
-X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
-y_train = train_df['SalePrice']
-
-# For test data, you might not have the target variable
-X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
-
-print("X_train :", X_train.shape)
-print("X_test :", X_test.shape)
-
-
-# ## Check missing data
-
-
-# numerical variables with missing data
-
-X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
-
-
-# The EndTailImputer can replace NA with a value at the left or right end of the distribution.
-#
-# In addition, it uses 3 different methods to identify the imputation values.
-#
-# In the following cells, we show how to use each method.
-#
-# ## Gaussian, right tail
-#
-# Let's begin by finding the values automatically at the right tail, by using the mean and the standard deviation.
-
-
-imputer = EndTailImputer(
-    # uses mean and standard deviation to determine the value
-    imputation_method='gaussian',
-    # value at right tail of distribution
-    tail='right',
-    # multiply the std by 3
-    fold=3,
-    # the variables to impute
-    variables=['LotFrontage', 'MasVnrArea'],
-)
-
-
-# find the imputation values
-imputer.fit(X_train)
-
-
-# The values for the imputation
-imputer.imputer_dict_
-
-
-# Note that we use different values for different variables.
-
-
-# impute the data
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# check we no longer have NA
-train_t['LotFrontage'].isnull().sum()
-
-
-# The variable distribution changed slightly with more values accumulating towards the right tail
-fig = plt.figure()
-ax = fig.add_subplot(111)
-X_train['LotFrontage'].plot(kind='kde', ax=ax)
-train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='best')
-
-
-# ## IQR, left tail
-#
-# Now, we will impute variables with values at the left tail. The values are identified using the inter-quartile range proximity rule. 
-#
-# The IQR rule is better suited for skewed variables.
-
-
-imputer = EndTailImputer(
-    
-    # uses the inter-quartile range proximity rule
-    imputation_method='iqr',
-    
-    # determines values at the left tail of the distribution
-    tail='left',
-    
-    # multiplies the IQR by 3
-    fold=3,
-    
-    # the variables to impute
-    variables=['LotFrontage', 'MasVnrArea'],
-)
-
-
-# finds the imputation values
-
-imputer.fit(X_train)
-
-
-# imputation values per variable
-
-imputer.imputer_dict_
-
-
-# transform the data
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Check we have no NA after the transformation
-
-train_t[['LotFrontage', 'MasVnrArea']].isnull().sum()
-
-
-# The variable distribution changed with the
-# transformation, with more values
-# accumulating towards the left tail.
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-X_train['LotFrontage'].plot(kind='kde', ax=ax)
-train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='best')
-
-
-# ## Impute with the maximum value
-#
-# We can find imputation values with a factor of the maximum variable value.
-
-
-imputer = EndTailImputer(
-    
-    # imputes beyond the maximum value
-    imputation_method='max',
-    
-    # multiplies the maximum value by 3
-    fold=3,
-    
-    # the variables to impute
-    variables=['LotFrontage', 'MasVnrArea'],
-)
-
-
-# find imputation values
-
-imputer.fit(X_train)
-
-
-# The imputation values.
-
-imputer.imputer_dict_
-
-
-# the maximum values of the variables,
-# note how the imputer multiplied them by 3
-# to determine the imputation values.
-
-X_train[imputer.variables_].max()
-
-
-# impute the data
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Check we have no NA  in the imputed data
-
-train_t[['LotFrontage', 'MasVnrArea']].isnull().sum()
-
-
-# The variable distribution changed with the
-# transformation, with now more values
-# beyond the maximum.
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-X_train['LotFrontage'].plot(kind='kde', ax=ax)
-train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='best')
-
-
-# ## Automatically impute all variables
-#
-# As with all Feature-engine transformers, the EndTailImputer can also find and impute all numerical variables in the data.
-
-
-# Start the imputer
-
-imputer = EndTailImputer()
-
-
-# Check the default parameters
-
-# how to find the imputation value
-imputer.imputation_method
-
-
-# which tail to use
-
-imputer.tail
-
-
-# how far out
-imputer.fold
-
-
-# Find variables and imputation values
-
-imputer.fit(X_train)
-
-
-# The variables to impute
-
-imputer.variables_
-
-
-#  The imputation values
-
-imputer.imputer_dict_
-
-
-# impute the data
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Sanity check:
-
-# No numerical variable with NA is  left in the
-# transformed data.
-
-[v for v in train_t.columns if train_t[v].dtypes !=
-    'O' and train_t[v].isnull().sum() > 1]
-
-
-
-// ---------------------------------------------------
-
-// RandomSampleImputer.py
-// RandomSampleImputer.py
-# Generated from: RandomSampleImputer.ipynb
-
-# # Missing value imputation: RandomSampleImputer
-#
-#
-# The RandomSampleImputer extracts a random sample of observations where data is available, and uses it to replace the NA. It is suitable for numerical and categorical variables.
-#
-# To control the random sample extraction, there are various ways to set a seed and ensure or maximize reproducibility.
-#
-#
-# **For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:**
-#
-# [Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3](http://jse.amstat.org/v19n3/decock.pdf)
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
-
-import feature_engine
-
-feature_engine.__version__
-
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-
-from feature_engine.imputation import RandomSampleImputer
-
-
-# Read the separate files
-train_df = pd.read_csv('../data/house-prices/train.csv')
-test_df = pd.read_csv('../data/house-prices/test.csv')
-
-# Separate features and target in training data
-X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
-y_train = train_df['SalePrice']
-
-# For test data, you might not have the target variable
-X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
-
-print("X_train :", X_train.shape)
-print("X_test :", X_test.shape)
-
-
-# ## Imputation in batch
-#
-# We can set the imputer to impute several observations in batch with a unique seed. This is the equivalent of setting the `random_state` to an integer in `pandas.sample()`.
-
-
-# Start the imputer
-
-imputer = RandomSampleImputer(
-
-    # the variables to impute
-    variables=['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea'],
-
-    # the random state for reproducibility
-    random_state=10,
-
-    # equialent to setting random_state in
-    # pandas.sample()
-    seed='general',
-)
-
-
-# Stores a copy of the train set variables
-
-imputer.fit(X_train)
-
-
-# the imputer saves a copy of the variables 
-# from the training set to impute new data.
-
-imputer.X_.head()
-
-
-# Check missing data in train set
-
-X_train[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].isnull().mean()
-
-
-# impute data
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Check missing data after the transformation
-
-train_t[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].isnull().mean()
-
-
-# when using the random sample imputer, 
-# the distribution of the variable does not change.
-
-# This imputation method is useful for models that 
-# are sensitive to changes in the variable distributions.
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-X_train['LotFrontage'].plot(kind='kde', ax=ax)
-train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='best')
-
-
-# ## Specific seeds for each observation
-#
-# Sometimes, we want to guarantee that the same observation is imputed with the same value, run after run. 
-#
-# To achieve this, we need to always use the same seed for every particular observation. 
-#
-# To do this, we can use the values in neighboring variables as seed.
-#
-# In this case, the seed will be calculated observation per observation, either by adding or multiplying the seeding variable values, and passed to the random_state of pandas.sample(), which is used under the hood by the imputer.
-# Then, a value will be extracted from the train set using that seed and  used to replace the NAN in particular observation.
-#
-# **To know more about how the observation per seed is used check this [notebook](https://github.com/solegalli/feature-engineering-for-machine-learning/blob/master/Section-04-Missing-Data-Imputation/04.07-Random-Sample-Imputation.ipynb)** 
-
-
-imputer = RandomSampleImputer(
-
-    # the values of these variables will be used as seed
-    random_state=['MSSubClass', 'YrSold'],
-
-    # 1 seed per observation
-    seed='observation',
-
-    # how to combine the values of the seeding variables
-    seeding_method='add',
-    
-    # impute all variables, numerical and categorical
-    variables=None,
-)
-
-
-# Stores a copy of the train set.
-
-imputer.fit(X_train)
-
-
-# takes a copy of the entire train set
-
-imputer.X_
-
-
-# imputes all variables.
-
-# this procedure takes a while because it is 
-# done observation per observation.
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# No missing data in any variable
-# after the imputation.
-
-test_t.isnull().sum()
-
-
-# when using the random sample imputer, 
-# the distribution of the variable does not change
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-X_train['LotFrontage'].plot(kind='kde', ax=ax)
-train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='best')
-
-
-
-// ---------------------------------------------------
-
-// ArbitraryNumberImputer.py
-// ArbitraryNumberImputer.py
-# Generated from: ArbitraryNumberImputer.ipynb
-
-# # ArbitraryNumberImputer
-#
-#
-# ArbitraryNumberImputer replaces NA by an arbitrary value. It works for numerical variables. The arbitrary value needs to be defined by the user.
-#
-# **For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:**
-#
-# [Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3](http://jse.amstat.org/v19n3/decock.pdf)
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
-
-
-# ## Version
-
-
-# Make sure you are using this 
-# Feature-engine version.
-
-import feature_engine
-
-feature_engine.__version__
-
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-
-from feature_engine.imputation  import ArbitraryNumberImputer
-
-
-# Read the separate files
-train_df = pd.read_csv('../data/house-prices/train.csv')
-test_df = pd.read_csv('../data/house-prices/test.csv')
-
-# Separate features and target in training data
-X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
-y_train = train_df['SalePrice']
-
-# For test data, you might not have the target variable
-X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
-
-print("X_train :", X_train.shape)
-print("X_test :", X_test.shape)
-
-
-# ## Imputate variables with same number
-#
-# We will impute 2 numerical variables with the number 999.
-
-
-# Check missing data
-
-X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
-
-
-# Let's create an instance of the imputer where we impute
-# 2 variables with the same arbitraty number.
-
-imputer = ArbitraryNumberImputer(
-    arbitrary_number=-999,
-    variables=['LotFrontage', 'MasVnrArea'],
-)
-
-imputer.fit(X_train)
-
-
-# The number to use in the imputation
-# is stored as parameter.
-
-imputer.arbitrary_number
-
-
-# The imputer will use the same value to impute
-# all indicated variables.
-
-imputer.imputer_dict_
-
-
-# Impute variables
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-# Sanity check: the min value is the one used for 
-#  the imputation
-
-train_t[['LotFrontage', 'MasVnrArea']].min()
-
-
-# The distribution of the variable
-# changed with the transformation.
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-X_train['LotFrontage'].plot(kind='kde', ax=ax)
-train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='best')
-
-
-# ### Impute variables with different numbers
-#
-# We can also impute different variables with different values. In this case, we need to start the transformer with a dictionary of variable to value pairs.
-
-
-# Impute different variables with different values
-
-imputer = ArbitraryNumberImputer(
-    imputer_dict={"LotFrontage": -678, "MasVnrArea": -789}
-)
-
-imputer.fit(X_train)
-
-
-# In this case, the imputer_dict_ matches the 
-# entered dictionary.
-
-imputer.imputer_dict_
-
-
-# Now we impute the missing data
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-# Sanity check: check minimum values
-
-train_t[['LotFrontage', 'MasVnrArea']].min()
-
-
-# The distribution of the variable changed
-# after the transformation.
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-X_train['LotFrontage'].plot(kind='kde', ax=ax)
-train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
-lines, labels = ax.get_legend_handles_labels()
-ax.legend(lines, labels, loc='best')
-
-
-# ## Automatically select all variables
-#
-# We can impute all numerical variables with the same value automatically with this transformer. We need to leave the  parameter `variables` to None.
-
-
-# Let's create an instance of the imputer where we impute
-# 2 variables with the same arbitraty number.
-
-imputer = ArbitraryNumberImputer(
-    arbitrary_number=-1,
-)
-
-imputer.fit(X_train)
-
-
-# The imputer finds all numerical variables
-# automatically.
-
-imputer.variables_
-
-
-# We find the imputation value in the dictionary
-
-imputer.imputer_dict_
-
-
-# now we impute the missing data
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-
-# Sanity check:
-
-# No numerical variable with NA is  left in the
-# transformed data.
-
-[v for v in train_t.columns if train_t[v].dtypes !=
-    'O' and train_t[v].isnull().sum() > 1]
-
-
-# New: we can get the name of the features in the final output
-imputer.get_feature_names_out()
-
-
-
-// ---------------------------------------------------
-
-// AddMissingIndicator.py
-// AddMissingIndicator.py
-# Generated from: AddMissingIndicator.ipynb
-
-# # AddMissingIndicator
-#
-#
-# AddMissingIndicator adds additional binary variables indicating missing data (thus, called missing indicators). The binary variables take the value 1 if the observation's value is missing, or 0 otherwise. AddMissingIndicator adds 1 binary variable per variable.
-#
-# **For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:**
-#
-# [Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3](http://jse.amstat.org/v19n3/decock.pdf)
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
-
-
-# ## Version
-
-
-# Make sure you are using this 
-# Feature-engine version.
-
-import feature_engine
-
-feature_engine.__version__
-
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-
-from feature_engine.imputation import (
-    AddMissingIndicator,
-    MeanMedianImputer,
-    CategoricalImputer,
-)
-
-
-# Read the separate files
+from feature_engine.imputation import AddMissingIndicator, MeanMedianImputer, CategoricalImputer
 train_df = pd.read_csv('../data/house-prices/train.csv')
 test_df = pd.read_csv('../data/house-prices/test.csv')
-
-# Separate features and target in training data
 X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
 y_train = train_df['SalePrice']
-
-# For test data, you might not have the target variable
-X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
-
-print("X_train :", X_train.shape)
-print("X_test :", X_test.shape)
-
-
-# ## Add indicators
-#
-# We will add indicators to 4 variables with missing data.
-
-
-# Check missing data
-
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
 X_train[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].isnull().mean()
-
-
-# Start the imputer with the variables for which
-# we want indicators.
-
-imputer = AddMissingIndicator(
-    variables=['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea'],
-)
-
+imputer = AddMissingIndicator(variables=['Alley', 'MasVnrType',
+    'LotFrontage', 'MasVnrArea'])
 imputer.fit(X_train)
-
-
-# the variables for which missing 
-# indicators will be added.
-
 imputer.variables_
-
-
-# Check the added indicators. They take the name of
-# the variable underscore na
-
 train_t = imputer.transform(X_train)
 test_t = imputer.transform(X_test)
-
-train_t[['Alley_na', 'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']].head()
-
-
-# Note that the original variables still have missing data.
-
-train_t[['Alley_na', 'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']].mean()
-
-
-# ## Indicators plus imputation
-#
-# We normally add missing indicators and impute the original variables with the mean or median if the variable is numerical, or with the mode if the variable is categorical. So let's do that.
-
-
-# Check variable types
-
+train_t[['Alley_na', 'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']].head(
+    )
+train_t[['Alley_na', 'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']].mean(
+    )
 X_train[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].dtypes
-
-
-# The first 2 variables are categorical, so I will impute them with the most frequent category. The last variables are numerical, so I will impute with the median.
-
-
-# Create a pipeline with the imputation strategy
-
-pipe = Pipeline([
-    ('indicators', AddMissingIndicator(
-        variables=['Alley', 'MasVnrType',
-                   'LotFrontage', 'MasVnrArea'],
-    )),
-
-    ('imputer_num', MeanMedianImputer(
-        imputation_method='median',
-        variables=['LotFrontage', 'MasVnrArea'],
-    )),
-
-    ('imputer_cat', CategoricalImputer(
-        imputation_method='frequent',
-        variables=['Alley', 'MasVnrType'],
-    )),
-])
-
-
-# With fit() the transformers learn the 
-# required parameters.
-
+pipe = Pipeline([('indicators', AddMissingIndicator(variables=['Alley',
+    'MasVnrType', 'LotFrontage', 'MasVnrArea'])), ('imputer_num',
+    MeanMedianImputer(imputation_method='median', variables=['LotFrontage',
+    'MasVnrArea'])), ('imputer_cat', CategoricalImputer(imputation_method=
+    'frequent', variables=['Alley', 'MasVnrType']))])
 pipe.fit(X_train)
-
-
-# We can look into the attributes of the
-# different transformers.
-
-# Check the variables that will take indicators.
 pipe.named_steps['indicators'].variables_
-
-
-# Check the median values for the imputation.
-
 pipe.named_steps['imputer_num'].imputer_dict_
-
-
-# Check the mode values for the imputation.
-
 pipe.named_steps['imputer_cat'].imputer_dict_
-
-
-# Now, we transform the data.
-
 train_t = pipe.transform(X_train)
 test_t = pipe.transform(X_test)
-
-
-# Lets' look at the transformed variables.
-
-# original variables plus indicators
-vars_ = ['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea',
-         'Alley_na', 'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']
-
+vars_ = ['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea', 'Alley_na',
+    'MasVnrType_na', 'LotFrontage_na', 'MasVnrArea_na']
 train_t[vars_].head()
-
-
-# After the transformation, the variables do not
-# show missing data
-
 train_t[vars_].isnull().sum()
-
-
-# ## Automatically select the variables
-#
-# We have the option to add indicators to all variables in the dataset, or to all variables with missing data. AddMissingIndicator can select which variables to transform automatically.
-#
-# When the parameter `variables` is left to None and the parameter `missing_only` is left to True, the imputer add indicators to all variables with missing data.
-#
-# When the parameter `variables` is left to None and the parameter `missing_only` is switched to False, the imputer add indicators to all variables.
-#
-# It is good practice to use `missing_only=True` when we set `variables=None`, so that the transformer handles the imputation automatically in a meaningful way.
-#
-# ### Automatically find variables with NA
-
-
-# With missing_only=True, missing indicators will only be added
-# to those variables with missing data found during the fit method
-# in the train set
-
-
-imputer = AddMissingIndicator(
-    variables=None,
-    missing_only=True,
-)
-
-# finds variables with missing data
+imputer = AddMissingIndicator(variables=None, missing_only=True)
 imputer.fit(X_train)
-
-
-# The original variables argument was None
-
 imputer.variables
-
-
-# In variables_ we find the list of variables with NA
-# in the train set
-
 imputer.variables_
-
-
 len(imputer.variables_)
-
-
-# We've got 19 variables with NA in the train set.
-
-
-# After transforming the dataset, we see more columns
-# corresponding to the missing indicators.
-
 train_t = imputer.transform(X_train)
 test_t = imputer.transform(X_test)
-
 X_train.shape, train_t.shape
-
-
-# Towards the right, we find the missing indicators.
-
 train_t.head()
-
-
-# ## Add indicators to all variables
-
-
-# We can, in practice, set up the indicator to add
-# missing indicators to all variables
-
-imputer = AddMissingIndicator(
-    variables=None,
-    missing_only=False,
-)
-
+imputer = AddMissingIndicator(variables=None, missing_only=False)
 imputer.fit(X_train)
-
-
-# the attribute variables_ now shows all variables
-# in the train set.
-
 len(imputer.variables_)
-
-
-# After transforming the dataset,
-# we obtain double the number of columns
-
 train_t = imputer.transform(X_train)
 test_t = imputer.transform(X_test)
-
 X_train.shape, train_t.shape
-
-
-# ## Automatic imputation
-#
-# We can automatically impute missing data in numerical and categorical variables, letting the imputers  find out which variables to impute.
-#
-# We need to set the parameter variables to None in all imputers. None is the default value, so we can simply omit the parameter when initialising the transformers.
-
-
-# Create a pipeline with the imputation strategy
-
-pipe = Pipeline([
-    # add indicators to variables with NA
-    ('indicators', AddMissingIndicator(
-        missing_only=True,
-    )),
-    # impute all numerical variables with the median
-    ('imputer_num', MeanMedianImputer(
-        imputation_method='median',
-    )),
-    # impute all categorical variables with the mode
-    ('imputer_cat', CategoricalImputer(
-        imputation_method='frequent',
-    )),
-])
-
-
-# With fit() the transformers learn the required parameters.
+pipe = Pipeline([('indicators', AddMissingIndicator(missing_only=True)), (
+    'imputer_num', MeanMedianImputer(imputation_method='median')), (
+    'imputer_cat', CategoricalImputer(imputation_method='frequent'))])
 pipe.fit(X_train)
-
-
-# We can look into the attributes of the different transformers.
-# Check the variables that will take indicators.
 pipe.named_steps['indicators'].variables_
-
-
-# Check the median values for the imputation.
 pipe.named_steps['imputer_num'].imputer_dict_
-
-
-# Check the mode values for the imputation.
 pipe.named_steps['imputer_cat'].imputer_dict_
-
-
-# Now, we transform the data.
 train_t = pipe.transform(X_train)
 test_t = pipe.transform(X_test)
-
-
-# We should see a complete case dataset
 train_t.isnull().sum()
-
-
-# Sanity check
 [v for v in train_t.columns if train_t[v].isnull().sum() > 1]
 
 
 
-// ---------------------------------------------------
+================================================
+File: ArbitraryNumberImputer.py
+================================================
+"""
+# ArbitraryNumberImputer
 
-// MeanMedianImputer.py
-// MeanMedianImputer.py
-# Generated from: MeanMedianImputer.ipynb
-
-# # Missing value imputation: MeanMedianImputer
-#
-# The MeanMedianImputer() replaces missing data by the mean or median value of the variable. 
-#
-# It works only with numerical variables.
-#
-# **For this demonstration, we use the Ames House Prices dataset produced by Professor Dean De Cock:**
-#
-# [Dean De Cock (2011) Ames, Iowa: Alternative to the Boston Housing
-# Data as an End of Semester Regression Project, Journal of Statistics Education, Vol.19, No. 3](http://jse.amstat.org/v19n3/decock.pdf)
-#
-# The version of the dataset used in this notebook can be obtained from [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data)
-
-
-# ## Version
-
-
-# Make sure you are using this 
-# Feature-engine version.
-
+ArbitraryNumberImputer replaces NA by an arbitrary value. It works for numerical variables. The arbitrary value needs to be defined by the user.
+"""
 import feature_engine
-
 feature_engine.__version__
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
-
-from  feature_engine.imputation import MeanMedianImputer
-
-
-# Read the separate files
+from feature_engine.imputation import ArbitraryNumberImputer
 train_df = pd.read_csv('../data/house-prices/train.csv')
 test_df = pd.read_csv('../data/house-prices/test.csv')
-
-# Separate features and target in training data
 X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
 y_train = train_df['SalePrice']
-
-# For test data, you might not have the target variable
-X_test = test_df.drop(['Id'], axis=1)  # Note: test data might not have SalePrice column
-
-print("X_train :", X_train.shape)
-print("X_test :", X_test.shape)
-
-
-# ## Check missing data
-
-
-# Numerical variables with missing data
-
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
 X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
-
-
-# ## Imputation with the median
-#
-# Let's start by imputing missing data in 2 variables with their median.
-
-
-# Set up the imputer.
-
-imputer = MeanMedianImputer(
-    imputation_method='median',
-    variables=['LotFrontage', 'MasVnrArea'],
-)
-
-
-# Find median values
-
+imputer = ArbitraryNumberImputer(arbitrary_number=-999, variables=[
+    'LotFrontage', 'MasVnrArea'])
 imputer.fit(X_train)
-
-
-# Dictionary with the imputation values for each variable.
-
+imputer.arbitrary_number
 imputer.imputer_dict_
-
-
-# Let's corroborate that the dictionary 
-# contains the median values of the variables.
-
-X_train[['LotFrontage', 'MasVnrArea']].median()
-
-
-# impute the data
-
 train_t = imputer.transform(X_train)
 test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].min()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = ArbitraryNumberImputer(imputer_dict={'LotFrontage': -678,
+    'MasVnrArea': -789})
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].min()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = ArbitraryNumberImputer(arbitrary_number=-1)
+imputer.fit(X_train)
+imputer.variables_
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+[v for v in train_t.columns if train_t[v].dtypes != 'O' and train_t[v].
+    isnull().sum() > 1]
+imputer.get_feature_names_out()
 
 
-# Check we no longer have NA
 
+================================================
+File: CategoricalImputer.py
+================================================
+"""
+# Missing value imputation: CategoricalImputer
+
+
+CategoricalImputer performs imputation of categorical variables. It replaces missing values by an arbitrary label "Missing" (default) or any other label entered by the user. Alternatively, it imputes missing data with the most frequent category.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import CategoricalImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['Alley', 'MasVnrType']].isnull().mean()
+X_train['MasVnrType'].value_counts().plot.bar()
+plt.ylabel('Number of observations')
+plt.title('MasVnrType')
+imputer = CategoricalImputer(imputation_method='missing', variables=[
+    'Alley', 'MasVnrType'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+test_t['MasVnrType'].value_counts().plot.bar()
+plt.ylabel('Number of observations')
+plt.title('Imputed MasVnrType')
+test_t['Alley'].value_counts().plot.bar()
+plt.ylabel('Number of observations')
+plt.title('Imputed Alley')
+imputer = CategoricalImputer(variables='MasVnrType', fill_value=
+    'this_is_missing')
+train_t = imputer.fit_transform(X_train)
+test_t = imputer.transform(X_test)
+imputer.imputer_dict_
+test_t['MasVnrType'].value_counts().plot.bar()
+plt.ylabel('Number of observations')
+plt.title('Imputed MasVnrType')
+imputer = CategoricalImputer(imputation_method='frequent', variables=[
+    'Alley', 'MasVnrType'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+X_train['MasVnrType'].value_counts()
+train_t['MasVnrType'].value_counts()
+imputer = CategoricalImputer(imputation_method='frequent')
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+[v for v in train_t.columns if train_t[v].dtypes == 'O' and train_t[v].
+    isnull().sum() > 1]
+imputer.get_feature_names_out()
+
+
+
+================================================
+File: DropMissingData.py
+================================================
+"""
+# Missing value imputation: DropMissingData
+
+Deletes rows with missing values. DropMissingData works both with numerical and categorical variables.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import DropMissingData
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+imputer = DropMissingData(variables=['Alley', 'MasVnrType', 'LotFrontage',
+    'MasVnrArea'], missing_only=False)
+imputer.fit(X_train)
+imputer.variables_
+X_train[imputer.variables].isna().sum()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[imputer.variables].isna().sum()
+X_train.shape
+train_t.shape
+tmp = imputer.return_na_data(X_train)
+tmp.shape
+1022 - 963
+imputer = DropMissingData(variables=['Alley', 'MasVnrType', 'LotFrontage',
+    'MasVnrArea'], missing_only=False, threshold=0.5)
+imputer.fit(X_train)
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[imputer.variables].isna().sum()
+imputer = DropMissingData(missing_only=True)
+imputer.fit(X_train)
+imputer.variables_
+X_train[imputer.variables_].isna().sum()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[imputer.variables_].isna().sum()
+train_t.shape
+imputer = DropMissingData(missing_only=True, threshold=0.75)
+imputer.fit(X_train)
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t.shape
+
+
+
+================================================
+File: EndTailImputer.py
+================================================
+"""
+# EndTailImputer
+
+The EndTailImputer() replaces missing data by a value at either tail of the distribution. It automatically determines the value to be used in the imputation using the mean plus or minus a factor of the standard deviation, or using the inter-quartile range proximity rule. Alternatively, it can use a factor of the maximum value.
+The EndTailImputer() is in essence, very similar to the ArbitraryNumberImputer, but it selects the value to use fr the imputation automatically, instead of having the user pre-define them.
+It works only with numerical variables.
+"""
+
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import EndTailImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+imputer = EndTailImputer(imputation_method='gaussian', tail='right', fold=3,
+    variables=['LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t['LotFrontage'].isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = EndTailImputer(imputation_method='iqr', tail='left', fold=3,
+    variables=['LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
 train_t[['LotFrontage', 'MasVnrArea']].isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = EndTailImputer(imputation_method='max', fold=3, variables=[
+    'LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+X_train[imputer.variables_].max()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = EndTailImputer()
+imputer.imputation_method
+imputer.tail
+imputer.fold
+imputer.fit(X_train)
+imputer.variables_
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+[v for v in train_t.columns if train_t[v].dtypes != 'O' and train_t[v].
+    isnull().sum() > 1]
 
 
-# The variable distribution changed slightly with
-# more values accumulating towards the median 
-# after the imputation.
 
+================================================
+File: MeanMedianImputer.py
+================================================
+"""
+# Missing value imputation: MeanMedianImputer
+
+The MeanMedianImputer() replaces missing data by the mean or median value of the variable. It works only with numerical variables.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import MeanMedianImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+X_train[['LotFrontage', 'MasVnrArea']].isnull().mean()
+imputer = MeanMedianImputer(imputation_method='median', variables=[
+    'LotFrontage', 'MasVnrArea'])
+imputer.fit(X_train)
+imputer.imputer_dict_
+X_train[['LotFrontage', 'MasVnrArea']].median()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['LotFrontage', 'MasVnrArea']].isnull().sum()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = MeanMedianImputer(imputation_method='mean')
+imputer.fit(X_train)
+imputer.variables_
+imputer.imputer_dict_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+test_t[imputer.variables_].isnull().sum()
+
+
+
+================================================
+File: RandomSampleImputer.py
+================================================
+"""
+# Missing value imputation: RandomSampleImputer
+
+The RandomSampleImputer extracts a random sample of observations where data is available, and uses it to replace the NA. It is suitable for numerical and categorical variables.
+To control the random sample extraction, there are various ways to set a seed and ensure or maximize reproducibility.
+"""
+import feature_engine
+feature_engine.__version__
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.imputation import RandomSampleImputer
+train_df = pd.read_csv('../data/house-prices/train.csv')
+test_df = pd.read_csv('../data/house-prices/test.csv')
+X_train = train_df.drop(['Id', 'SalePrice'], axis=1)
+y_train = train_df['SalePrice']
+X_test = test_df.drop(['Id'], axis=1)
+print('X_train :', X_train.shape)
+print('X_test :', X_test.shape)
+imputer = RandomSampleImputer(variables=['Alley', 'MasVnrType',
+    'LotFrontage', 'MasVnrArea'], random_state=10, seed='general')
+imputer.fit(X_train)
+imputer.X_.head()
+X_train[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].isnull().mean()
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+train_t[['Alley', 'MasVnrType', 'LotFrontage', 'MasVnrArea']].isnull().mean()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+X_train['LotFrontage'].plot(kind='kde', ax=ax)
+train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
+lines, labels = ax.get_legend_handles_labels()
+ax.legend(lines, labels, loc='best')
+imputer = RandomSampleImputer(random_state=['MSSubClass', 'YrSold'], seed=
+    'observation', seeding_method='add', variables=None)
+imputer.fit(X_train)
+imputer.X_
+train_t = imputer.transform(X_train)
+test_t = imputer.transform(X_test)
+test_t.isnull().sum()
 fig = plt.figure()
 ax = fig.add_subplot(111)
 X_train['LotFrontage'].plot(kind='kde', ax=ax)
@@ -1551,47 +450,4 @@ train_t['LotFrontage'].plot(kind='kde', ax=ax, color='red')
 lines, labels = ax.get_legend_handles_labels()
 ax.legend(lines, labels, loc='best')
 
-
-# ## Automatically select all numerical variables
-#
-# Let's now impute all numerical variables with the mean.
-#
-# If we leave the parameter `variables` to `None`, the transformer identifies and imputes all numerical variables.
-
-
-# Set up the imputer
-
-imputer = MeanMedianImputer(
-    imputation_method='mean',
-)
-
-
-# Find numerical variables and their mean.
-
-imputer.fit(X_train)
-
-
-# Numerical variables identified.
-
-imputer.variables_
-
-
-# The imputation value, the mean, for each variable
-
-imputer.imputer_dict_
-
-
-# impute the data
-
-train_t = imputer.transform(X_train)
-test_t = imputer.transform(X_test)
-
-# the numerical variables do not have NA after
-# the imputation.
-
-test_t[imputer.variables_].isnull().sum()
-
-
-
-// ---------------------------------------------------
 

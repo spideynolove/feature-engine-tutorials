@@ -1,19 +1,9 @@
-# Generated from: DecisionTreeEncoder.ipynb
-
-# # DecisionTreeEncoder
-#
-# The DecisionTreeEncoder() encodes categorical variables with predictions of a decision tree model.
-
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
 from feature_engine.encoding import DecisionTreeEncoder
 
-
-# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
     data = pd.read_csv(filepath)
@@ -26,41 +16,19 @@ def load_titanic(filepath='titanic.csv'):
     return data
 
 
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
 data.head()
-
-
 X = data.drop(['survived', 'name', 'ticket'], axis=1)
 y = data.survived
-
-
-# we will encode the below variables, they have no missing values
 X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
+""" Make sure that the variables are type (object).
 if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
+or not pick it up (if we leave variables=None). """
 X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
 X_train.shape, X_test.shape
-
-
-# The categorical variable will be first encoded into integers with the
-# OrdinalEncoder(). The integers can be assigned arbitrarily to the
-# categories or following the mean value of the target in each category.
-#
-# Then a decision tree will be fit using the resulting numerical variable to predict
-# the target  variable. Finally, the original categorical variable values will be
-# replaced by the predictions of the decision tree.
-
-
-'''
+"""
 Parameters
     ----------
 
@@ -104,53 +72,19 @@ Parameters
     variables : list, default=None
         The list of categorical variables that will be encoded. If None, the
         encoder will find and select all object type variables.
-'''
-
-
-tree_enc = DecisionTreeEncoder(encoding_method='arbitrary',
-                               cv=3,
-                               scoring = 'roc_auc',
-                               param_grid = {'max_depth': [1, 2, 3, 4]},
-                               regression = False,
-                               variables=['cabin', 'pclass', 'embarked']
-                              )
-
-tree_enc.fit(X_train,y_train) # to fit you need to pass the target y
-
-
+"""
+tree_enc = DecisionTreeEncoder(encoding_method='arbitrary', cv=3, scoring=
+    'roc_auc', param_grid={'max_depth': [1, 2, 3, 4]}, regression=False,
+    variables=['cabin', 'pclass', 'embarked'])
+tree_enc.fit(X_train, y_train)
 tree_enc.encoder_
-
-
-# transform and visualise the data
-
 train_t = tree_enc.transform(X_train)
 test_t = tree_enc.transform(X_test)
-
 test_t.sample(5)
-
-
-# ### Automatically select the variables
-#
-# This encoder will select all categorical variables to encode, when no variables are specified when calling the encoder.
-
-
-tree_enc = DecisionTreeEncoder(encoding_method='arbitrary',
-                               cv=3,
-                               scoring = 'roc_auc',
-                               param_grid = {'max_depth': [1, 2, 3, 4]},
-                               regression = False,
-                              )
-
-tree_enc.fit(X_train,y_train) # to fit you need to pass the target y
-
-
+tree_enc = DecisionTreeEncoder(encoding_method='arbitrary', cv=3, scoring=
+    'roc_auc', param_grid={'max_depth': [1, 2, 3, 4]}, regression=False)
+tree_enc.fit(X_train, y_train)
 tree_enc.encoder_
-
-
-# transform and visualise the data
-
 train_t = tree_enc.transform(X_train)
 test_t = tree_enc.transform(X_test)
-
 test_t.sample(5)
-

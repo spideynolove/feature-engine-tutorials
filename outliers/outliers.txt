@@ -1,36 +1,26 @@
-// OutlierTrimmer.py
-// OutlierTrimmer.py
-# Generated from: OutlierTrimmer.ipynb
+Directory structure:
+└── outliers/
+    ├── ArbitraryOutlierCapper.py
+    ├── OutlierTrimmer.py
+    └── Winsorizer.py
 
-# # OutlierTrimmer
-# The OutlierTrimmer() removes observations with outliers from the dataset.
-#
-# It works only with numerical variables. A list of variables can be indicated.
-# Alternatively, the OutlierTrimmer() will select all numerical variables.
-#
-# The OutlierTrimmer() first calculates the maximum and /or minimum values
-# beyond which a value will be considered an outlier, and thus removed.
-#
-# Limits are determined using:
-#
-# - a Gaussian approximation
-# - the inter-quantile range proximity rule
-# - percentiles.
-#
-# ### Example:
+================================================
+File: ArbitraryOutlierCapper.py
+================================================
+"""
+# ArbitraryOutlierCapper
+The ArbitraryOutlierCapper() caps the maximum or minimum values of a variable
+at an arbitrary value indicated by the user.
 
-
-# importing libraries
+The user must provide the maximum or minimum values that will be used <br>
+to cap each variable in a dictionary {feature : capping_value}
+"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
+from feature_engine.outliers import ArbitraryOutlierCapper
 
-from feature_engine.outliers import OutlierTrimmer
-
-
-# Load titanic dataset from file
 
 def load_titanic(filepath='../data/titanic.csv'):
     data = pd.read_csv(filepath)
@@ -45,57 +35,136 @@ def load_titanic(filepath='../data/titanic.csv'):
     data.drop(['name', 'ticket'], axis=1, inplace=True)
     return data
 
-# To plot histogram of given numerical feature
+
 def plot_hist(data, col):
     plt.figure(figsize=(8, 5))
     plt.hist(data[col], bins=30)
-    plt.title("Distribution of " + col)
+    plt.title('Distribution of ' + col)
     return plt.show()
 
 
-# Loading titanic dataset
 data = load_titanic()
 data.sample(5)
-
-
-# let's separate into training and testing set
-
-X_train, X_test, y_train, y_test = train_test_split(data.drop('survived', axis=1),
-                                                    data['survived'],
-                                                    test_size=0.3,
-                                                    random_state=0)
-
-print("train data shape before removing outliers:", X_train.shape)
-print("test data shape before removing outliers:", X_test.shape)
-
-
-# let's find out the maximum Age and maximum Fare in the titanic
-
-print("Max age:", data.age.max())
-print("Max fare:", data.fare.max())
-
-print("Min age:", data.age.min())
-print("Min fare:", data.fare.min())
-
-
-# Histogram of age feature before capping outliers
+X_train, X_test, y_train, y_test = train_test_split(data.drop('survived',
+    axis=1), data['survived'], test_size=0.3, random_state=0)
+print('train data:', X_train.shape)
+print('test data:', X_test.shape)
 plot_hist(data, 'age')
-
-
-# Histogram of fare feature before capping outliers
 plot_hist(data, 'fare')
+print('Max age:', data.age.max())
+print('Max fare:', data.fare.max())
+print('Min age:', data.age.min())
+print('Min fare:', data.fare.min())
+"""Parameters
+----------
+max_capping_dict : dictionary, default=None
+    Dictionary containing the user specified capping values for the right tail of
+    the distribution of each variable (maximum values).
+
+min_capping_dict : dictionary, default=None
+    Dictionary containing user specified capping values for the eft tail of the
+    distribution of each variable (minimum values).
+
+missing_values : string, default='raise'
+    Indicates if missing values should be ignored or raised. If
+    `missing_values='raise'` the transformer will return an error if the
+    training or the datasets to transform contain missing values.
+"""
+capper = ArbitraryOutlierCapper(max_capping_dict={'age': 50, 'fare': 150},
+    min_capping_dict=None)
+capper.fit(X_train)
+print('Maximum caps:', capper.right_tail_caps_)
+capper.left_tail_caps_
+train_t = capper.transform(X_train)
+test_t = capper.transform(X_test)
+print('Max age after capping:', train_t.age.max())
+print('Max fare after capping:', train_t.fare.max())
+capper = ArbitraryOutlierCapper(max_capping_dict=None, min_capping_dict={
+    'age': 10, 'fare': 100})
+capper.fit(X_train)
+capper.right_tail_caps_
+capper.left_tail_caps_
+train_t = capper.transform(X_train)
+test_t = capper.transform(X_test)
+print('Min age:', train_t.age.min())
+print('Min fare:', train_t.fare.min())
+capper = ArbitraryOutlierCapper(min_capping_dict={'age': 5, 'fare': 5},
+    max_capping_dict={'age': 60, 'fare': 150})
+capper.fit(X_train)
+capper.right_tail_caps_
+capper.left_tail_caps_
+train_t = capper.transform(X_train)
+test_t = capper.transform(X_test)
+print('Max age:', train_t.age.max())
+print('Max fare:', train_t.fare.max())
+print('Min age:', train_t.age.min())
+print('Min fare:', train_t.fare.min())
+plot_hist(train_t, 'age')
+plot_hist(train_t, 'fare')
 
 
-# ### Outlier trimming using Gaussian limits:
-# The transformer will find the maximum and / or minimum values to
-#     trim the variables using the Gaussian approximation.
-#
-#
-# - right tail: mean + 3* std
-# - left tail: mean - 3* std
+
+================================================
+File: OutlierTrimmer.py
+================================================
+"""
+# OutlierTrimmer
+The OutlierTrimmer() removes observations with outliers from the dataset.
+
+It works only with numerical variables. A list of variables can be indicated.
+Alternatively, the OutlierTrimmer() will select all numerical variables.
+
+The OutlierTrimmer() first calculates the maximum and /or minimum values
+beyond which a value will be considered an outlier, and thus removed.
+
+Limits are determined using:
+
+- a Gaussian approximation
+- the inter-quantile range proximity rule
+- percentiles.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.outliers import OutlierTrimmer
 
 
-'''Parameters
+def load_titanic(filepath='../data/titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['embarked'].fillna('C', inplace=True)
+    data['fare'] = data['fare'].astype('float')
+    data['fare'].fillna(data['fare'].median(), inplace=True)
+    data['age'] = data['age'].astype('float')
+    data['age'].fillna(data['age'].median(), inplace=True)
+    data.drop(['name', 'ticket'], axis=1, inplace=True)
+    return data
+
+
+def plot_hist(data, col):
+    plt.figure(figsize=(8, 5))
+    plt.hist(data[col], bins=30)
+    plt.title('Distribution of ' + col)
+    return plt.show()
+
+
+data = load_titanic()
+data.sample(5)
+X_train, X_test, y_train, y_test = train_test_split(data.drop('survived',
+    axis=1), data['survived'], test_size=0.3, random_state=0)
+print('train data shape before removing outliers:', X_train.shape)
+print('test data shape before removing outliers:', X_test.shape)
+print('Max age:', data.age.max())
+print('Max fare:', data.fare.max())
+print('Min age:', data.age.min())
+print('Min fare:', data.fare.min())
+plot_hist(data, 'age')
+plot_hist(data, 'fare')
+"""Parameters
 ----------
 
 capping_method : str, default=gaussian
@@ -112,170 +181,85 @@ fold: int or float, default=3
 variables : list, default=None
 
 missing_values: string, default='raise'
-    Indicates if missing values should be ignored or raised.'''
-
-# removing outliers based on right tail of age and fare columns using gaussian capping method
-trimmer = OutlierTrimmer(
-    capping_method='gaussian', tail='right', fold=3, variables=['age', 'fare'])
-
-# fitting trimmer object to training data
+    Indicates if missing values should be ignored or raised."""
+trimmer = OutlierTrimmer(capping_method='gaussian', tail='right', fold=3,
+    variables=['age', 'fare'])
 trimmer.fit(X_train)
-
-
-# here we can find the maximum caps allowed
 trimmer.right_tail_caps_
-
-
-# this dictionary is empty, because we selected only right tail
 trimmer.left_tail_caps_
-
-
-# transforming the training and testing data
 train_t = trimmer.transform(X_train)
 test_t = trimmer.transform(X_test)
-
-# let's check the new maximum Age and maximum Fare in the titanic
-print("Max age:", train_t.age.max())
-print("Max fare:", train_t.fare.max())
-
-
-print("train data shape after removing outliers:", train_t.shape)
-print(f"{X_train.shape[0] - train_t.shape[0]} observations are removed\n")
-
-print("test data shape after removing outliers:", test_t.shape)
-print(f"{X_test.shape[0] - test_t.shape[0]} observations are removed")
-
-
-# ### Gaussian approximation trimming, both tails
-
-
-# Trimming the outliers at both tails using gaussian  method
-trimmer = OutlierTrimmer(
-    capping_method='gaussian', tail='both', fold=2, variables=['fare', 'age'])
+print('Max age:', train_t.age.max())
+print('Max fare:', train_t.fare.max())
+print('train data shape after removing outliers:', train_t.shape)
+print(f'{X_train.shape[0] - train_t.shape[0]} observations are removed\n')
+print('test data shape after removing outliers:', test_t.shape)
+print(f'{X_test.shape[0] - test_t.shape[0]} observations are removed')
+trimmer = OutlierTrimmer(capping_method='gaussian', tail='both', fold=2,
+    variables=['fare', 'age'])
 trimmer.fit(X_train)
-
-
-print("Minimum caps :", trimmer.left_tail_caps_)
-
-print("Maximum caps :", trimmer.right_tail_caps_)
-
-
-# transforming the training and testing data
+print('Minimum caps :', trimmer.left_tail_caps_)
+print('Maximum caps :', trimmer.right_tail_caps_)
 train_t = trimmer.transform(X_train)
 test_t = trimmer.transform(X_test)
-
-print("train data shape after removing outliers:", train_t.shape)
-print(f"{X_train.shape[0] - train_t.shape[0]} observations are removed\n")
-
-print("test data shape after removing outliers:", test_t.shape)
-print(f"{X_test.shape[0] - test_t.shape[0]} observations are removed")
-
-
-# ### Inter Quartile Range, both tails
-# The transformer will find the boundaries using the IQR proximity rule.
-# **IQR limits:**
-#
-# - right tail: 75th quantile + 3* IQR
-# - left tail:  25th quantile - 3* IQR
-#
-# where IQR is the inter-quartile range: 75th quantile - 25th quantile.
-
-
-# trimming at both tails using iqr capping method
-trimmer = OutlierTrimmer(
-    capping_method='iqr', tail='both', variables=['age', 'fare'])
-
+print('train data shape after removing outliers:', train_t.shape)
+print(f'{X_train.shape[0] - train_t.shape[0]} observations are removed\n')
+print('test data shape after removing outliers:', test_t.shape)
+print(f'{X_test.shape[0] - test_t.shape[0]} observations are removed')
+trimmer = OutlierTrimmer(capping_method='iqr', tail='both', variables=[
+    'age', 'fare'])
 trimmer.fit(X_train)
-
-
-print("Minimum caps :", trimmer.left_tail_caps_)
-
-print("Maximum caps :", trimmer.right_tail_caps_)
-
-
-# transforming the training and testing data
+print('Minimum caps :', trimmer.left_tail_caps_)
+print('Maximum caps :', trimmer.right_tail_caps_)
 train_t = trimmer.transform(X_train)
 test_t = trimmer.transform(X_test)
-
-print("train data shape after removing outliers:", train_t.shape)
-print(f"{X_train.shape[0] - train_t.shape[0]} observations are removed\n")
-
-print("test data shape after removing outliers:", test_t.shape)
-print(f"{X_test.shape[0] - test_t.shape[0]} observations are removed")
-
-
-# ### percentiles or quantiles:
-# The limits are given by the percentiles.
-# - right tail: 98th percentile
-# - left tail:  2nd percentile
-
-
-# trimming at both tails using quantiles capping method
-trimmer = OutlierTrimmer(capping_method='quantiles',
-                         tail='both', fold=0.02, variables=['age', 'fare'])
-
+print('train data shape after removing outliers:', train_t.shape)
+print(f'{X_train.shape[0] - train_t.shape[0]} observations are removed\n')
+print('test data shape after removing outliers:', test_t.shape)
+print(f'{X_test.shape[0] - test_t.shape[0]} observations are removed')
+trimmer = OutlierTrimmer(capping_method='quantiles', tail='both', fold=0.02,
+    variables=['age', 'fare'])
 trimmer.fit(X_train)
-
-
-print("Minimum caps :", trimmer.left_tail_caps_)
-
-print("Maximum caps :", trimmer.right_tail_caps_)
-
-
-# transforming the training and testing data
+print('Minimum caps :', trimmer.left_tail_caps_)
+print('Maximum caps :', trimmer.right_tail_caps_)
 train_t = trimmer.transform(X_train)
 test_t = trimmer.transform(X_test)
-
-print("train data shape after removing outliers:", train_t.shape)
-print(f"{X_train.shape[0] - train_t.shape[0]} observations are removed\n")
-
-print("test data shape after removing outliers:", test_t.shape)
-print(f"{X_test.shape[0] - test_t.shape[0]} observations are removed")
-
-
-# Histogram of age feature after removing outliers
+print('train data shape after removing outliers:', train_t.shape)
+print(f'{X_train.shape[0] - train_t.shape[0]} observations are removed\n')
+print('test data shape after removing outliers:', test_t.shape)
+print(f'{X_test.shape[0] - test_t.shape[0]} observations are removed')
 plot_hist(train_t, 'age')
-
-
-# Histogram of fare feature after removing outliers
 plot_hist(train_t, 'fare')
 
 
 
-// ---------------------------------------------------
+================================================
+File: Winsorizer.py
+================================================
+"""
+# Winsorizer
+Winzorizer finds maximum and minimum values following a Gaussian or skewed distribution as indicated. It can also cap the right, left or both ends of the distribution.
 
-// Winsorizer.py
-// Winsorizer.py
-# Generated from: Winsorizer.ipynb
+The Winsorizer() caps maximum and / or minimum values of a variable.
 
-# # Winsorizer
-# Winzorizer finds maximum and minimum values following a Gaussian or skewed distribution as indicated. It can also cap the right, left or both ends of the distribution.
-#
-# The Winsorizer() caps maximum and / or minimum values of a variable.
-#
-# The Winsorizer() works only with numerical variables. A list of variables can
-# be indicated. Alternatively, the Winsorizer() will select all numerical
-# variables in the train set.
-#
-# The Winsorizer() first calculates the capping values at the end of the
-# distribution. The values are determined using:
-#
-# - a Gaussian approximation,
-# - the inter-quantile range proximity rule (IQR)
-# - percentiles.
-#
+The Winsorizer() works only with numerical variables. A list of variables can
+be indicated. Alternatively, the Winsorizer() will select all numerical
+variables in the train set.
 
-# importing libraries
+The Winsorizer() first calculates the capping values at the end of the
+distribution. The values are determined using:
+
+- a Gaussian approximation,
+- the inter-quantile range proximity rule (IQR)
+- percentiles.
+"""
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
-
 from feature_engine.outliers import Winsorizer
 
-
-# Load titanic dataset from file
 
 def load_titanic(filepath='../data/titanic.csv'):
     data = pd.read_csv(filepath)
@@ -290,52 +274,25 @@ def load_titanic(filepath='../data/titanic.csv'):
     data.drop(['name', 'ticket'], axis=1, inplace=True)
     return data
 
-# To plot histogram of given numerical feature
+
 def plot_hist(data, col):
     plt.figure(figsize=(8, 5))
     plt.hist(data[col], bins=30)
-    plt.title("Distribution of " + col)
+    plt.title('Distribution of ' + col)
     return plt.show()
 
 
-# Loading titanic dataset
 data = load_titanic()
 data.sample(5)
-
-
-# let's separate into training and testing set
-
-X_train, X_test, y_train, y_test = train_test_split(data.drop('survived', axis=1),
-                                                    data['survived'],
-                                                    test_size=0.3,
-                                                    random_state=0)
-
-print("train data:", X_train.shape)
-print("test data:", X_test.shape)
-
-
-# let's find out the maximum Age and maximum Fare in the titanic
-
-print("Max age:", data.age.max())
-print("Max fare:", data.fare.max())
-
-
-# Histogram of age feature before capping outliers
+X_train, X_test, y_train, y_test = train_test_split(data.drop('survived',
+    axis=1), data['survived'], test_size=0.3, random_state=0)
+print('train data:', X_train.shape)
+print('test data:', X_test.shape)
+print('Max age:', data.age.max())
+print('Max fare:', data.fare.max())
 plot_hist(data, 'age')
-
-
-# Histogram of fare feature before capping outliers
 plot_hist(data, 'fare')
-
-
-# ### Capping : Gaussian
-#
-# Gaussian limits:
-# + right tail: mean + 3* std
-# + left tail: mean - 3* std
-
-
-'''Parameters
+"""Parameters
 ----------
 capping_method : str, default=gaussian
 
@@ -358,315 +315,44 @@ variables: list, default=None
 missing_values: string, default='raise'
 
     Indicates if missing values should be ignored or raised.
-'''
-# capping at right tail using gaussian capping method
-capper = Winsorizer(
-    capping_method='gaussian', tail='right', fold=3, variables=['age', 'fare'])
-
-# fitting winsorizer object to training data
+"""
+capper = Winsorizer(capping_method='gaussian', tail='right', fold=3,
+    variables=['age', 'fare'])
 capper.fit(X_train)
-
-
-# here we can find the maximum caps allowed
 capper.right_tail_caps_
-
-
-# this dictionary is empty, because we selected only right tail
 capper.left_tail_caps_
-
-
-# # Histogram of age feature after capping outliers
 plot_hist(capper.transform(X_train), 'age')
-
-
-# transforming the training and testing data
 train_t = capper.transform(X_train)
 test_t = capper.transform(X_test)
-
-# let's check the new maximum Age and maximum Fare in the titanic
 train_t.age.max(), train_t.fare.max()
-
-
-# ### Gaussian approximation capping, both tails
-
-
-# Capping the outliers at both tails using gaussian capping method
-
-winsor = Winsorizer(capping_method='gaussian',
-                    tail='both', fold=2, variables='fare')
+winsor = Winsorizer(capping_method='gaussian', tail='both', fold=2,
+    variables='fare')
 winsor.fit(X_train)
-
-
-print("Minimum caps :", winsor.left_tail_caps_)
-
-print("Maximum caps :", winsor.right_tail_caps_)
-
-
-# Histogram of fare feature after capping outliers
+print('Minimum caps :', winsor.left_tail_caps_)
+print('Maximum caps :', winsor.right_tail_caps_)
 plot_hist(winsor.transform(X_train), 'fare')
-
-
-# transforming the training and testing data
 train_t = winsor.transform(X_train)
 test_t = winsor.transform(X_test)
-
-print("Max fare:", train_t.fare.max())
-print("Min fare:", train_t.fare.min())
-
-
-# ### Inter Quartile Range, both tails
-# **IQR limits:**
-#
-# - right tail: 75th quantile + 3* IQR
-# - left tail:  25th quantile - 3* IQR
-#
-# where IQR is the inter-quartile range: 75th quantile - 25th quantile.
-
-
-# capping at both tails using iqr capping method
-winsor = Winsorizer(capping_method='iqr', tail='both',
-                    variables=['age', 'fare'])
-
+print('Max fare:', train_t.fare.max())
+print('Min fare:', train_t.fare.min())
+winsor = Winsorizer(capping_method='iqr', tail='both', variables=['age',
+    'fare'])
 winsor.fit(X_train)
-
-
 winsor.left_tail_caps_
-
-
 winsor.right_tail_caps_
-
-
-# transforming the training and testing data
-
 train_t = winsor.transform(X_train)
 test_t = winsor.transform(X_test)
-
-print("Max fare:", train_t.fare.max())
-print("Min fare", train_t.fare.min())
-
-
-# ### percentiles or quantiles:
-#
-# - right tail: 98th percentile
-# - left tail:  2nd percentile
-
-
-# capping at both tails using quantiles capping method
-winsor = Winsorizer(capping_method='quantiles', tail='both',
-                    fold=0.02, variables=['age', 'fare'])
-
+print('Max fare:', train_t.fare.max())
+print('Min fare', train_t.fare.min())
+winsor = Winsorizer(capping_method='quantiles', tail='both', fold=0.02,
+    variables=['age', 'fare'])
 winsor.fit(X_train)
-
-
-print("Minimum caps :", winsor.left_tail_caps_)
-
-print("Maximum caps :", winsor.right_tail_caps_)
-
-
-# transforming the training and testing data
+print('Minimum caps :', winsor.left_tail_caps_)
+print('Maximum caps :', winsor.right_tail_caps_)
 train_t = winsor.transform(X_train)
 test_t = winsor.transform(X_test)
-
-print("Max age:", train_t.age.max())
-print("Min age", train_t.age.min())
-
-
-# Histogram of age feature after capping outliers
+print('Max age:', train_t.age.max())
+print('Min age', train_t.age.min())
 plot_hist(train_t, 'age')
 
-
-
-// ---------------------------------------------------
-
-// ArbitraryOutlierCapper.py
-// ArbitraryOutlierCapper.py
-# Generated from: ArbitraryOutlierCapper.ipynb
-
-# # ArbitraryOutlierCapper
-# The ArbitraryOutlierCapper() caps the maximum or minimum values of a variable
-# at an arbitrary value indicated by the user.
-#
-# The user must provide the maximum or minimum values that will be used <br>
-# to cap each variable in a dictionary {feature : capping_value}
-
-
-# ### Example
-
-
-# importing libraries
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-
-from feature_engine.outliers import ArbitraryOutlierCapper
-
-
-# Load titanic dataset from file
-
-def load_titanic(filepath='../data/titanic.csv'):
-    data = pd.read_csv(filepath)
-    data = data.replace('?', np.nan)
-    data['cabin'] = data['cabin'].astype(str).str[0]
-    data['pclass'] = data['pclass'].astype('O')
-    data['embarked'].fillna('C', inplace=True)
-    data['fare'] = data['fare'].astype('float')
-    data['fare'].fillna(data['fare'].median(), inplace=True)
-    data['age'] = data['age'].astype('float')
-    data['age'].fillna(data['age'].median(), inplace=True)
-    data.drop(['name', 'ticket'], axis=1, inplace=True)
-    return data
-
-# To plot histogram of given numerical feature
-def plot_hist(data, col):
-    plt.figure(figsize=(8, 5))
-    plt.hist(data[col], bins=30)
-    plt.title("Distribution of " + col)
-    return plt.show()
-
-
-data = load_titanic()
-data.sample(5)
-
-
-# let's separate into training and testing set
-
-X_train, X_test, y_train, y_test = train_test_split(data.drop('survived', axis=1),
-                                                    data['survived'],
-                                                    test_size=0.3,
-                                                    random_state=0)
-
-print("train data:", X_train.shape)
-print("test data:", X_test.shape)
-
-
-# Histogram of age feature before capping outliers
-
-plot_hist(data, 'age')
-
-
-# Histogram of fare feature before capping outliers
-
-plot_hist(data, 'fare')
-
-
-# let's find out the maximum&minimum Age and maximum Fare in the titanic
-print("Max age:", data.age.max())
-print("Max fare:", data.fare.max())
-
-print("Min age:", data.age.min())
-print("Min fare:", data.fare.min())
-
-
-# ### Maximum capping
-
-
-'''Parameters
-----------
-max_capping_dict : dictionary, default=None
-    Dictionary containing the user specified capping values for the right tail of
-    the distribution of each variable (maximum values).
-
-min_capping_dict : dictionary, default=None
-    Dictionary containing user specified capping values for the eft tail of the
-    distribution of each variable (minimum values).
-
-missing_values : string, default='raise'
-    Indicates if missing values should be ignored or raised. If
-    `missing_values='raise'` the transformer will return an error if the
-    training or the datasets to transform contain missing values.
-'''
-
-# capping of age and fare features at right tail
-capper = ArbitraryOutlierCapper(
-    max_capping_dict={'age': 50, 'fare': 150}, min_capping_dict=None)
-
-capper.fit(X_train)
-
-
-# here we can find the maximum caps allowed
-print("Maximum caps:", capper.right_tail_caps_)
-
-
-# this dictionary is empty, because we selected only right tail
-capper.left_tail_caps_
-
-
-# transforming train and test data
-train_t = capper.transform(X_train)
-test_t = capper.transform(X_test)
-
-#check max age and max fare after capping
-print("Max age after capping:", train_t.age.max())
-print("Max fare after capping:", train_t.fare.max())
-
-
-# ### Minimum capping
-
-
-# capping outliers at left tail
-capper = ArbitraryOutlierCapper(
-    max_capping_dict=None, min_capping_dict={'age': 10, 'fare': 100})
-
-capper.fit(X_train)
-
-
-# this dictionary is empty, because we selected only right tail
-capper.right_tail_caps_
-
-
-# here we can find the minimum caps allowed
-capper.left_tail_caps_
-
-
-# transforming train and test set
-train_t = capper.transform(X_train)
-test_t = capper.transform(X_test)
-
-# After capping
-print("Min age:", train_t.age.min())
-print("Min fare:", train_t.fare.min())
-
-
-# ### Both ends capping
-
-
-# capping outliers at both tails
-capper = ArbitraryOutlierCapper(
-    min_capping_dict={'age': 5, 'fare': 5},
-    max_capping_dict={'age': 60, 'fare': 150})
-capper.fit(X_train)
-
-
-# here we can find the maximum caps allowed
-capper.right_tail_caps_
-
-
-# here we can find the minimum caps allowed
-capper.left_tail_caps_
-
-
-# transforming train and test data
-train_t = capper.transform(X_train)
-test_t = capper.transform(X_test)
-
-# After capping outliers
-print("Max age:", train_t.age.max())
-print("Max fare:", train_t.fare.max())
-
-print("Min age:", train_t.age.min())
-print("Min fare:", train_t.fare.min())
-
-
-# Histogram of age feature after capping outliers
-plot_hist(train_t, 'age')
-
-
-# Histogram of fare feature after capping outliers
-plot_hist(train_t, 'fare')
-
-
-
-// ---------------------------------------------------
 

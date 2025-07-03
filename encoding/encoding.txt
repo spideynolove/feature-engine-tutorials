@@ -1,224 +1,32 @@
-// StringSimilarityEncoder.py
-// StringSimilarityEncoder.py
-# Generated from: StringSimilarityEncoder.ipynb
-
-# # Imports
-
-
-import string
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from feature_engine.encoding import StringSimilarityEncoder
-
-
-# # Load and preprocess data
-
-
-# Helper function for loading and preprocessing data
-def load_titanic(filepath='titanic.csv'):
-    translate_table = str.maketrans('' , '', string.punctuation)
-    data = pd.read_csv(filepath)
-    data = data.replace('?', np.nan)
-    # data['home.dest'] = (
-    #     data['home.dest']
-    #     .str.strip()
-    #     .str.translate(translate_table)
-    #     .str.replace('  ', ' ')
-    #     .str.lower()
-    # )
-    data['name'] = (
-        data['name']
-        .str.strip()
-        .str.translate(translate_table)
-        .str.replace('  ', ' ')
-        .str.lower()
-    )
-    data['ticket'] = (
-        data['ticket']
-        .str.strip()
-        .str.translate(translate_table)
-        .str.replace('  ', ' ')
-        .str.lower()
-    )
-    return data
-
-
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
-data.head()
-
-
-# Separate into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(
-    data.drop(['survived', 'sex', 'cabin', 'embarked'], axis=1),
-    data['survived'],
-    test_size=0.3,
-    random_state=0
-)
-
-
-# # StringSimilarityEncoder
-
-
-# set up the encoder
-# encoder = StringSimilarityEncoder(top_categories=2, variables=['name', 'home.dest', 'ticket'])
-encoder = StringSimilarityEncoder(top_categories=2, variables=['name', 'ticket'])
-
-
-# fit the encoder
-encoder.fit(X_train)
-
-
-# lets see what categories we will be comparing to others
-encoder.encoder_dict_
-
-
-# transform the data
-train_t = encoder.transform(X_train)
-test_t = encoder.transform(X_test)
-
-
-# check output
-train_t.head(5)
-
-
-# check output
-test_t.head(5)
-
-
-# plot encoded column - ticket
-# OHE could produce only 0, but SSE produces values in [0,1] range
-fig, ax = plt.subplots(2, 1)
-# train_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_ca 2144', sharex=True, title='Ticket encoding in train', ax=ax[0])
-train_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_347082', sharex=True, title='Ticket encoding in train', ax=ax[0])
-# test_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_ca 2144', sharex=True, title='Ticket encoding in test', ax=ax[1])
-test_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_347082', sharex=True, title='Ticket encoding in test', ax=ax[1])
-
-
-# defining encoder that ignores NaNs
-encoder = StringSimilarityEncoder(
-    top_categories=2,
-    missing_values='ignore',
-    # variables=['name', 'home.dest', 'ticket']
-    variables=['name', 'ticket']
-)
-
-
-# refiting the encoder
-encoder.fit(X_train)
-
-
-# lets see what categories we will be comparing to others
-# note - no empty strings with handle_missing='ignore'
-encoder.encoder_dict_
-
-
-# transform the data
-train_t = encoder.transform(X_train)
-test_t = encoder.transform(X_test)
-
-
-# check output
-train_t.head(5)
-
-
-# check output
-test_t.head(5)
-
-
-# plot encoded column - home.dest
-fig, ax = plt.subplots(2, 1);
-train_t.plot(
-    kind='scatter',
-    x='home.dest_new york ny',
-    y='home.dest_london',
-    sharex=True,
-    title='Home destination encoding in train',
-    ax=ax[0]
-);
-test_t.plot(
-    kind='scatter',
-    x='home.dest_new york ny',
-    y='home.dest_london',
-    sharex=True,
-    title='Home destination encoding in test',
-    ax=ax[1]
-);
-
-
-# # Note on dimensionality reduction
-
-
-# These encoded columns could also be compressed further to reduce dimensions
-# since they are not boolean, but real numbers
-from sklearn.decomposition import PCA
-
-
-# defining encoder for home destination
-encoder = StringSimilarityEncoder(
-    top_categories=None,
-    handle_missing='impute',
-    variables=['home.dest']
-)
-
-
-# refiting the encoder
-encoder.fit(X_train)
-
-
-# transform the data
-train_t = encoder.transform(X_train)
-
-
-# check the shape (should be pretty big)
-train_t.shape
-
-
-# take home.dest encoded columns
-home_encoded = train_t.filter(like='home.dest')
-
-
-# defining PCA for compression
-pca = PCA(n_components=0.9)
-
-
-# train PCA
-pca.fit(home_encoded)
-
-
-# transform train and test datasets
-train_compressed = pca.transform(home_encoded)
-
-
-# check compressed shape (should be way smaller)
-train_compressed.shape
-
-
-
-// ---------------------------------------------------
-
-// OrdinalEncoder.py
-// OrdinalEncoder.py
-# Generated from: OrdinalEncoder.ipynb
-
-# # OrdinalEncoder
-# The OrdinalEncoder() will replace the variable labels by digits, from 1 to the number of different labels. 
-#
-# If we select "arbitrary", then the encoder will assign numbers as the labels appear in the variable (first come first served).
-#
-# If we select "ordered", the encoder will assign numbers following the mean of the target value for that label. So labels for which the mean of the target is higher will get the number 1, and those where the mean of the target is smallest will get the number n.
-
-
+Directory structure:
+└── encoding/
+    ├── CountFrequencyEncoder.py
+    ├── DecisionTreeEncoder.py
+    ├── MeanEncoder.py
+    ├── OneHotEncoder.py
+    ├── OrdinalEncoder.py
+    ├── PRatioEncoder.py
+    ├── RareLabelEncoder.py
+    ├── StringSimilarityEncoder.py
+    └── WoEEncoder.py
+
+================================================
+File: CountFrequencyEncoder.py
+================================================
+"""
+# CountFrequencyEncoder
+<p>The CountFrequencyEncoder() replaces categories by the count of
+observations per category or by the percentage of observations per category.<br>
+For example in the variable colour, if 10 observations are blue, blue will
+be replaced by 10. Alternatively, if 10% of the observations are blue, blue
+will be replaced by 0.1.</p>
+"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
-from feature_engine.encoding import OrdinalEncoder
+from feature_engine.encoding import CountFrequencyEncoder
 
-
-# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
     data = pd.read_csv(filepath)
@@ -231,756 +39,74 @@ def load_titanic(filepath='titanic.csv'):
     return data
 
 
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
 data.head()
-
-
 X = data.drop(['survived', 'name', 'ticket'], axis=1)
 y = data.survived
-
-
-# we will encode the below variables, they have no missing values
 X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
+""" Make sure that the variables are type (object).
 if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
+or not pick it up (if we leave variables=None). """
 X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
 X_train.shape, X_test.shape
-
-
-# The OrdinalEncoder() replaces categories by ordinal numbers 
-# (0, 1, 2, 3, etc). The numbers can be ordered based on the mean of the target
-# per category, or assigned arbitrarily.
-#
-# Ordered ordinal encoding:  for the variable colour, if the mean of the target
-# for blue, red and grey is 0.5, 0.8 and 0.1 respectively, blue is replaced by 1,
-# red by 2 and grey by 0.
-#
-# Arbitrary ordinal encoding: the numbers will be assigned arbitrarily to the
-# categories, on a first seen first served basis.
-#
-# The encoder will encode only categorical variables (type 'object'). A list
-# of variables can be passed as an argument. If no variables are passed, the
-# encoder will find and encode all categorical variables (type 'object').
-
-
-# ### Ordered
-
-
-# we will encode 3 variables:
-'''
+"""
 Parameters
 ----------
 
-encoding_method : str, default='ordered' 
-    Desired method of encoding.
+encoding_method : str, default='count' 
+                Desired method of encoding.
 
-    'ordered': the categories are numbered in ascending order according to
-    the target mean value per category.
+        'count': number of observations per category
+        
+        'frequency': percentage of observations per category
 
-    'arbitrary' : categories are numbered arbitrarily.
-    
-variables : list, default=None
-    The list of categorical variables that will be encoded. If None, the 
-    encoder will find and select all object type variables.
-'''
-ordinal_enc = OrdinalEncoder(encoding_method='ordered',
-                             variables=['pclass', 'cabin', 'embarked'])
-
-# for this encoder, we need to pass the target as argument
-# if encoding_method='ordered'
-ordinal_enc.fit(X_train, y_train)
-
-
-ordinal_enc.encoder_dict_
-
-
-# transform and visualise the data
-
-train_t = ordinal_enc.transform(X_train)
-test_t = ordinal_enc.transform(X_test)
-
-test_t.sample(5)
-
-
-''' The OrdinalEncoder with encoding_method='order' has the characteristic that return monotonic
- variables,that is, encoded variables which values increase as the target increases'''
-
-# let's explore the monotonic relationship
-plt.figure(figsize=(7,5))
-pd.concat([test_t,y_test], axis=1).groupby("pclass")["survived"].mean().plot()
-plt.xticks([0,1,2])
-plt.yticks(np.arange(0,1.1,0.1))
-plt.title("Relationship between pclass and target")
-plt.xlabel("Pclass")
-plt.ylabel("Mean of target")
-plt.show()
-
-
-# ### Arbitrary
-
-
-ordinal_enc = OrdinalEncoder(encoding_method='arbitrary',
-                             variables=['pclass', 'cabin', 'embarked'])
-
-# for this encoder we don't need to add the target. You can leave it or remove it.
-ordinal_enc.fit(X_train)
-
-
-ordinal_enc.encoder_dict_
-
-
-# Note that the ordering of the different labels is  not the same when we select "arbitrary" or "ordered"
-
-
-# transform: see the numerical values in the former categorical variables
-
-train_t = ordinal_enc.transform(X_train)
-test_t = ordinal_enc.transform(X_test)
-
-test_t.sample(5)
-
-
-# ### Automatically select categorical variables
-#
-# This encoder selects all the categorical variables, if None is passed to the variable argument when calling the encoder.
-
-
-ordinal_enc = OrdinalEncoder(encoding_method = 'arbitrary')
-
-# for this encoder we don't need to add the target. You can leave it or remove it.
-ordinal_enc.fit(X_train)
-
-
-ordinal_enc.variables
-
-
-train_t = ordinal_enc.transform(X_train)
-test_t = ordinal_enc.transform(X_test)
-
-test_t.sample(5)
-
-
-
-// ---------------------------------------------------
-
-// RareLabelEncoder.py
-// RareLabelEncoder.py
-# Generated from: RareLabelEncoder.ipynb
-
-# # RareLabelEncoder
-#
-# The RareLabelEncoder() groups labels that show a small number of observations in the dataset into a new category called 'Rare'. This helps to avoid overfitting.
-#
-# The argument ' tol ' indicates the percentage of observations that the label needs to have in order not to be re-grouped into the "Rare" label.<br> The argument n_categories indicates the minimum number of distinct categories that a variable needs to have for any of the labels to be re-grouped into 'Rare'.<br><br>
-# #### Note
-# If the number of labels is smaller than n_categories, then the encoder will not group the labels for that variable.
-
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-from feature_engine.encoding import RareLabelEncoder
-
-
-# Load titanic dataset from file
-
-def load_titanic(filepath='titanic.csv'):
-    data = pd.read_csv(filepath)
-    data = data.replace('?', np.nan)
-    data['cabin'] = data['cabin'].astype(str).str[0]
-    data['pclass'] = data['pclass'].astype('O')
-    data['age'] = data['age'].astype('float').fillna(data.age.median())
-    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
-    data['embarked'].fillna('C', inplace=True)
-    return data
-
-
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
-data.head()
-
-
-X = data.drop(['survived', 'name', 'ticket'], axis=1)
-y = data.survived
-
-
-# we will encode the below variables, they have no missing values
-X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
-if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
-X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-X_train.shape, X_test.shape
-
-
-# The RareLabelEncoder() groups rare / infrequent categories in
-# a new category called "Rare", or any other name entered by the user.
-#
-# For example in the variable colour,<br> if the percentage of observations
-# for the categories magenta, cyan and burgundy 
-# are < 5%, all those
-# categories will be replaced by the new label "Rare".
-#
-# Note, infrequent labels can also be grouped under a user defined name, for
-# example 'Other'. The name to replace infrequent categories is defined
-# with the parameter replace_with.
-#
-# The encoder will encode only categorical variables (type 'object'). A list
-# of variables can be passed as an argument. If no variables are passed as 
-# argument, the encoder will find and encode all categorical variables
-# (object type).
-
-
-# Rare value encoder
-'''
-Parameters
-----------
-
-tol: float, default=0.05
-    the minimum frequency a label should have to be considered frequent.
-    Categories with frequencies lower than tol will be grouped.
-
-n_categories: int, default=10
-    the minimum number of categories a variable should have for the encoder
-    to find frequent labels. If the variable contains less categories, all
-    of them will be considered frequent.
-
-max_n_categories: int, default=None
-    the maximum number of categories that should be considered frequent.
-    If None, all categories with frequency above the tolerance (tol) will be
-    considered.
-
-variables : list, default=None
-    The list of categorical variables that will be encoded. If None, the 
-    encoder will find and select all object type variables.
-
-replace_with : string, default='Rare'
-    The category name that will be used to replace infrequent categories.
-'''
-
-rare_encoder = RareLabelEncoder(tol=0.05,
-                                n_categories=5,
-                                variables=['cabin', 'pclass', 'embarked'])
-rare_encoder.fit(X_train)
-
-
-rare_encoder.encoder_dict_
-
-
-train_t = rare_encoder.transform(X_train)
-test_t = rare_encoder.transform(X_train)
-
-test_t.head()
-
-
-test_t.cabin.value_counts()
-
-
-# #### The user can change the string from 'Rare' to something else.
-
-
-# Rare value encoder
-rare_encoder = RareLabelEncoder(tol=0.03,
-                                replace_with='Other',  # replacing 'Rare' with 'Other'
-                                variables=['cabin', 'pclass', 'embarked'],
-                                n_categories=2
-                                )
-
-rare_encoder.fit(X_train)
-
-train_t = rare_encoder.transform(X_train)
-test_t = rare_encoder.transform(X_train)
-
-test_t.sample(5)
-
-
-rare_encoder.encoder_dict_
-
-
-test_t.cabin.value_counts()
-
-
-# #### The user can choose to retain only the most popular categories with the argument max_n_categories.
-
-
-# Rare value encoder
-
-rare_encoder = RareLabelEncoder(tol=0.03,
-                                variables=['cabin', 'pclass', 'embarked'],
-                                n_categories=2,
-                                # keeps only the most popular 3 categories in every variable.
-                                max_n_categories=3
-                                )
-
-rare_encoder.fit(X_train)
-
-train_t = rare_encoder.transform(X_train)
-test_t = rare_encoder.transform(X_train)
-
-test_t.sample(5)
-
-
-rare_encoder.encoder_dict_
-
-
-# ### Automatically select all categorical variables
-#
-# If no variable list is passed as argument, it selects all the categorical variables.
-
-
-len(X_train['pclass'].unique()), len(X_train['sex'].unique()), len(X_train['embarked'].unique())
-
-
-# # X_train['pclass'].value_counts(dropna=False)
-# pclass_encoder = RareLabelEncoder(tol=0.03, n_categories=3)
-# X_train['pclass'] = pclass_encoder.fit_transform(X_train[['pclass']])
-
-
-# # X_train['sex'].value_counts(dropna=False)
-# sex_encoder = RareLabelEncoder(tol=0.03, n_categories=2)
-# X_train['sex'] = sex_encoder.fit_transform(X_train[['sex']])
-
-
-# # X_train['embarked'].value_counts(dropna=False)
-# embarked_encoder = RareLabelEncoder(tol=0.03, n_categories=3)
-# X_train['embarked'] = embarked_encoder.fit_transform(X_train[['embarked']])
-
-
-## Rare value encoder
-rare_encoder = RareLabelEncoder(tol = 0.03, n_categories=3)
-rare_encoder.fit(X_train)
-rare_encoder.encoder_dict_
-
-
-train_t = rare_encoder.transform(X_train)
-test_t = rare_encoder.transform(X_train)
-test_t.sample(5)
-
-
-
-// ---------------------------------------------------
-
-// OneHotEncoder.py
-// OneHotEncoder.py
-# Generated from: OneHotEncoder.ipynb
-
-# # OneHotEncoder
-# Performs One Hot Encoding.
-#
-# The encoder can select how many different labels per variable to encode into binaries. When top_categories is set to None, all the categories will be transformed in binary variables. 
-#
-# However, when top_categories is set to an integer, for example 10, then only the 10 most popular categories will be transformed into binary, and the rest will be discarded.
-#
-# The encoder has also the possibility to create binary variables from all categories (drop_last = False), or remove the binary for the last category (drop_last = True), for use in linear models.
-#
-# Finally, the encoder has the option to drop the second dummy variable for binary variables. That is, if a categorical variable has 2 unique values, for example colour = ['black', 'white'], setting the parameter drop_last_binary=True, will automatically create only 1 binary for this variable, for example colour_black.
-
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-from feature_engine.encoding import OneHotEncoder
-
-
-# Load titanic dataset from file
-
-def load_titanic(filepath='titanic.csv'):
-    data = pd.read_csv(filepath)
-    data = data.replace('?', np.nan)
-    data['cabin'] = data['cabin'].astype(str).str[0]
-    data['pclass'] = data['pclass'].astype('O')
-    data['age'] = data['age'].astype('float').fillna(data.age.median())
-    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
-    data['embarked'].fillna('C', inplace=True)
-    return data
-
-
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
-data.head()
-
-
-X = data.drop(['survived', 'name', 'ticket'], axis=1)
-y = data.survived
-
-
-# we will encode the below variables, they have no missing values
-X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
-if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
-X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
-X_train.shape, X_test.shape
-
-
-# One hot encoding consists in replacing the categorical variable by a
-# combination of binary variables which take value 0 or 1, to indicate if
-# a certain category is present in an observation.
-#
-# Each one of the binary variables are also known as dummy variables. For
-# example, from the categorical variable "Gender" with categories 'female'
-# and 'male', we can generate the boolean variable "female", which takes 1
-# if the person is female or 0 otherwise. We can also generate the variable
-# male, which takes 1 if the person is "male" and 0 otherwise.
-#
-# The encoder has the option to generate one dummy variable per category, or
-# to create dummy variables only for the top n most popular categories, that is,
-# the categories that are shown by the majority of the observations.
-#
-# If dummy variables are created for all the categories of a variable, you have
-# the option to drop one category not to create information redundancy. That is,
-# encoding into k-1 variables, where k is the number if unique categories.
-#
-# The encoder will encode only categorical variables (type 'object'). A list
-# of variables can be passed as an argument. If no variables are passed as 
-# argument, the encoder will find and encode categorical variables (object type).
-#
-#
-# #### Note:
-# New categories in the data to transform, that is, those that did not appear
-# in the training set, will be ignored (no binary variable will be created for them).
-
-
-# ### Create all k dummy variables, top_categories=False
-
-
-'''
-Parameters
-----------
-
-top_categories: int, default=None
-    If None, a dummy variable will be created for each category of the variable.
-    Alternatively, top_categories indicates the number of most frequent categories
-    to encode. Dummy variables will be created only for those popular categories
-    and the rest will be ignored. Note that this is equivalent to grouping all the
-    remaining categories in one group.
-    
 variables : list
-    The list of categorical variables that will be encoded. If None, the  
-    encoder will find and select all object type variables.
-    
-drop_last: boolean, default=False
-    Only used if top_categories = None. It indicates whether to create dummy
-    variables for all the categories (k dummies), or if set to True, it will
-    ignore the last variable of the list (k-1 dummies).
-'''
-
-ohe_enc = OneHotEncoder(top_categories=None,
-                        variables=['pclass', 'cabin', 'embarked'],
-                        drop_last=False)
-ohe_enc.fit(X_train)
-
-
-ohe_enc.encoder_dict_
-
-
-train_t = ohe_enc.transform(X_train)
-test_t = ohe_enc.transform(X_train)
-
+          The list of categorical variables that will be encoded. If None, the 
+          encoder will find and transform all object type variables.
+"""
+count_encoder = CountFrequencyEncoder(encoding_method='frequency',
+    variables=['cabin', 'pclass', 'embarked'])
+count_encoder.fit(X_train)
+count_encoder.encoder_dict_
+train_t = count_encoder.transform(X_train)
+test_t = count_encoder.transform(X_test)
 test_t.head()
-
-
-# ### Selecting top_categories to encode
-
-
-ohe_enc = OneHotEncoder(top_categories=2,
-                        variables=['pclass', 'cabin', 'embarked'],
-                        drop_last=False)
-ohe_enc.fit(X_train)
-
-ohe_enc.encoder_dict_
-
-
-train_t = ohe_enc.transform(X_train)
-test_t = ohe_enc.transform(X_train)
-test_t.head()
-
-
-# ### Dropping the last category for linear models
-
-
-ohe_enc = OneHotEncoder(top_categories=None,
-                        variables=['pclass', 'cabin', 'embarked'],
-                        drop_last=True)
-
-ohe_enc.fit(X_train)
-
-ohe_enc.encoder_dict_
-
-
-train_t = ohe_enc.transform(X_train)
-test_t = ohe_enc.transform(X_train)
-
-test_t.head()
-
-
-# ### Automatically select categorical variables
-#
-# This encoder selects all the categorical variables, if None is passed to the variable argument when calling the encoder.
-
-
-ohe_enc = OneHotEncoder(top_categories=None,
-                        drop_last=True)
-
-ohe_enc.fit(X_train)
-
-
-# the parameter variables is None
-ohe_enc.variables
-
-
-# but the attribute variables_ has the categorical variables 
-# that will be encoded
-
-ohe_enc.variables_
-
-
-# and we can also find which variables from those
-# are binary
-
-ohe_enc.variables_binary_
-
-
-train_t = ohe_enc.transform(X_train)
-test_t = ohe_enc.transform(X_train)
-
-test_t.head()
-
-
-# ### Automatically create 1 dummy from binary variables (sex)
-#
-# We can encode categorical variables that have more than 2 categories into k dummies, and, at the same time, encode categorical variables that have 2 categories only in 1 dummy. The second 1 is completely redundant.
-#
-# We do so as follows:
-
-
-ohe_enc = OneHotEncoder(top_categories=None,
-                        drop_last=False,
-                        drop_last_binary=True,
-                        )
-
-ohe_enc.fit(X_train)
-
-
-# the encoder dictionary
-ohe_enc.encoder_dict_
-
-
-# and we can also find which variables from those
-# are binary
-
-ohe_enc.variables_binary_
-
-
-train_t = ohe_enc.transform(X_train)
-test_t = ohe_enc.transform(X_train)
-
-test_t.head()
-
-
-
-// ---------------------------------------------------
-
-// WoEEncoder.py
-// WoEEncoder.py
-# Generated from: WoEEncoder.ipynb
-
-# ## WoEEncoder (weight of evidence)
-#
-# This encoder replaces the labels by the weight of evidence 
-# #### It only works for binary classification.
-#
-# The weight of evidence is given by: log( p(1) / p(0) )
-
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-from sklearn.model_selection import train_test_split
-from feature_engine.encoding import WoEEncoder
-
-from feature_engine.encoding import RareLabelEncoder #to reduce cardinality
-
-
-# Load titanic dataset from file
-
-def load_titanic(filepath='titanic.csv'):
-    data = pd.read_csv(filepath)
-    data = data.replace('?', np.nan)
-    data['cabin'] = data['cabin'].astype(str).str[0]
-    data['pclass'] = data['pclass'].astype('O')
-    data['age'] = data['age'].astype('float').fillna(data.age.median())
-    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
-    data['embarked'].fillna('C', inplace=True)
-    return data
-
-
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
-data.head()
-
-
-X = data.drop(['survived', 'name', 'ticket'], axis=1)
-y = data.survived
-
-
-# we will encode the below variables, they have no missing values
-X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
-if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
-X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
-X_train.shape, X_test.shape
-
-
-## Rare value encoder first to reduce the cardinality
-# see RareLabelEncoder jupyter notebook for more details on this encoder
-rare_encoder = RareLabelEncoder(tol=0.03,
-                                n_categories=2, 
-                                variables=['cabin', 'pclass', 'embarked'])
-
-rare_encoder.fit(X_train)
-
-# transform
-train_t = rare_encoder.transform(X_train)
-test_t = rare_encoder.transform(X_test)
-
-
-# The WoERatioEncoder() replaces categories by the weight of evidence
-# or by the ratio between the probability of the target = 1 and the probability
-# of the  target = 0.
-#
-# The weight of evidence is given by: log(P(X=x<sub>j</sub>|Y = 1)/P(X=x<sub>j</sub>|Y=0))
-#
-#
-# Note: This categorical encoding is exclusive for binary classification.
-#
-# For example in the variable colour, if the mean of the target = 1 for blue
-# is 0.8 and the mean of the target = 0  is 0.2, blue will be replaced by:
-# np.log(0.8/0.2) = 1.386
-# #### Note: 
-# The division by 0 is not defined and the log(0) is not defined.
-# Thus, if p(0) = 0 or p(1) = 0 for
-# woe , in any of the variables, the encoder will return an error.
-#
-# The encoder will encode only categorical variables (type 'object'). A list
-# of variables can be passed as an argument. If no variables are passed as 
-# argument, the encoder will find and encode all categorical variables
-# (object type).<br>
-#
-# For details on the calculation of the weight of evidence visit:<br>
-# https://www.listendata.com/2015/03/weight-of-evidence-woe-and-information.html
-
-
-# ### Weight of evidence
-
-
-woe_enc = WoEEncoder(variables=['cabin', 'pclass', 'embarked'])
-
-# to fit you need to pass the target y
-woe_enc.fit(train_t, y_train)
-
-
-woe_enc.encoder_dict_
-
-
-# transform and visualise the data
-
-train_t = woe_enc.transform(train_t)
-test_t = woe_enc.transform(test_t)
-
-test_t.sample(5)
-
-
-''' The WoEEncoder has the characteristic that return monotonic
- variables, that is, encoded variables which values increase as the target increases'''
-
-# let's explore the monotonic relationship
-plt.figure(figsize=(7,5))
-pd.concat([test_t,y_test], axis=1).groupby("pclass")["survived"].mean().plot()
-#plt.xticks([0,1,2])
-plt.yticks(np.arange(0,1.1,0.1))
-plt.title("Relationship between pclass and target")
-plt.xlabel("Pclass")
-plt.ylabel("Mean of target")
+test_t['pclass'].value_counts().plot.bar()
 plt.show()
-
-
-# ### Automatically select the variables
-#
-# This encoder will select all categorical variables to encode, when no variables are specified when calling the encoder.
-
-
-ratio_enc = WoEEncoder()
-
-# to fit we need to pass the target y
-ratio_enc.fit(train_t, y_train)
-
-
-# transform and visualise the data
-
-train_t = ratio_enc.transform(train_t)
-test_t = ratio_enc.transform(test_t)
-
+test_orig = count_encoder.inverse_transform(test_t)
+test_orig.head()
+count_enc = CountFrequencyEncoder(encoding_method='count', variables='cabin')
+count_enc.fit(X_train)
+count_enc.encoder_dict_
+train_t = count_enc.transform(X_train)
+test_t = count_enc.transform(X_test)
+test_t.head()
+count_enc = CountFrequencyEncoder(encoding_method='count')
+count_enc.fit(X_train)
+count_enc.variables
+train_t = count_enc.transform(X_train)
+test_t = count_enc.transform(X_test)
 test_t.head()
 
 
 
-// ---------------------------------------------------
+================================================
+File: DecisionTreeEncoder.py
+================================================
+"""
+# DecisionTreeEncoder
 
-// DecisionTreeEncoder.py
-// DecisionTreeEncoder.py
-# Generated from: DecisionTreeEncoder.ipynb
-
-# # DecisionTreeEncoder
-#
-# The DecisionTreeEncoder() encodes categorical variables with predictions of a decision tree model.
-
-
+The DecisionTreeEncoder() encodes categorical variables with predictions of a decision tree model.
+"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
 from feature_engine.encoding import DecisionTreeEncoder
 
 
-# Load titanic dataset from file
-
 def load_titanic(filepath='titanic.csv'):
     data = pd.read_csv(filepath)
     data = data.replace('?', np.nan)
@@ -992,41 +118,19 @@ def load_titanic(filepath='titanic.csv'):
     return data
 
 
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
 data.head()
-
-
 X = data.drop(['survived', 'name', 'ticket'], axis=1)
 y = data.survived
-
-
-# we will encode the below variables, they have no missing values
 X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
+""" Make sure that the variables are type (object).
 if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
+or not pick it up (if we leave variables=None). """
 X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
 X_train.shape, X_test.shape
-
-
-# The categorical variable will be first encoded into integers with the
-# OrdinalEncoder(). The integers can be assigned arbitrarily to the
-# categories or following the mean value of the target in each category.
-#
-# Then a decision tree will be fit using the resulting numerical variable to predict
-# the target  variable. Finally, the original categorical variable values will be
-# replaced by the predictions of the decision tree.
-
-
-'''
+"""
 Parameters
     ----------
 
@@ -1070,81 +174,39 @@ Parameters
     variables : list, default=None
         The list of categorical variables that will be encoded. If None, the
         encoder will find and select all object type variables.
-'''
-
-
-tree_enc = DecisionTreeEncoder(encoding_method='arbitrary',
-                               cv=3,
-                               scoring = 'roc_auc',
-                               param_grid = {'max_depth': [1, 2, 3, 4]},
-                               regression = False,
-                               variables=['cabin', 'pclass', 'embarked']
-                              )
-
-tree_enc.fit(X_train,y_train) # to fit you need to pass the target y
-
-
+"""
+tree_enc = DecisionTreeEncoder(encoding_method='arbitrary', cv=3, scoring=
+    'roc_auc', param_grid={'max_depth': [1, 2, 3, 4]}, regression=False,
+    variables=['cabin', 'pclass', 'embarked'])
+tree_enc.fit(X_train, y_train)
 tree_enc.encoder_
-
-
-# transform and visualise the data
-
 train_t = tree_enc.transform(X_train)
 test_t = tree_enc.transform(X_test)
-
 test_t.sample(5)
-
-
-# ### Automatically select the variables
-#
-# This encoder will select all categorical variables to encode, when no variables are specified when calling the encoder.
-
-
-tree_enc = DecisionTreeEncoder(encoding_method='arbitrary',
-                               cv=3,
-                               scoring = 'roc_auc',
-                               param_grid = {'max_depth': [1, 2, 3, 4]},
-                               regression = False,
-                              )
-
-tree_enc.fit(X_train,y_train) # to fit you need to pass the target y
-
-
+tree_enc = DecisionTreeEncoder(encoding_method='arbitrary', cv=3, scoring=
+    'roc_auc', param_grid={'max_depth': [1, 2, 3, 4]}, regression=False)
+tree_enc.fit(X_train, y_train)
 tree_enc.encoder_
-
-
-# transform and visualise the data
-
 train_t = tree_enc.transform(X_train)
 test_t = tree_enc.transform(X_test)
-
 test_t.sample(5)
 
 
 
-// ---------------------------------------------------
+================================================
+File: MeanEncoder.py
+================================================
+"""
+# MeanEncoder
 
-// CountFrequencyEncoder.py
-// CountFrequencyEncoder.py
-# Generated from: CountFrequencyEncoder.ipynb
-
-# # CountFrequencyEncoder
-# <p>The CountFrequencyEncoder() replaces categories by the count of
-# observations per category or by the percentage of observations per category.<br>
-# For example in the variable colour, if 10 observations are blue, blue will
-# be replaced by 10. Alternatively, if 10% of the observations are blue, blue
-# will be replaced by 0.1.</p>
-
-
+The MeanEncoder() replaces the labels of the variables by the mean value of the target for that label. <br>For example, in the variable colour, if the mean value of the binary target is 0.5 for the label blue, then blue is replaced by 0.5
+"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
-from feature_engine.encoding import CountFrequencyEncoder
+from feature_engine.encoding import MeanEncoder
 
-
-# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
     data = pd.read_csv(filepath)
@@ -1157,163 +219,171 @@ def load_titanic(filepath='titanic.csv'):
     return data
 
 
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
 data.head()
-
-
 X = data.drop(['survived', 'name', 'ticket'], axis=1)
 y = data.survived
-
-
-# we will encode the below variables, they have no missing values
 X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
+""" Make sure that the variables are type (object).
 if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
+or not pick it up (if we leave variables=None). """
 X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
 X_train.shape, X_test.shape
+"""
+Parameters
+----------  
+variables : list, default=None
+    The list of categorical variables that will be encoded. If None, the 
+    encoder will find and select all object type variables.
+"""
+mean_enc = MeanEncoder(variables=['cabin', 'pclass', 'embarked'])
+mean_enc.fit(X_train, y_train)
+mean_enc.encoder_dict_
+train_t = mean_enc.transform(X_train)
+test_t = mean_enc.transform(X_test)
+test_t.head()
+""" The MeanEncoder has the characteristic that return monotonic
+ variables, that is, encoded variables which values increase as the target increases"""
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('pclass')['survived'].mean().plot()
+plt.yticks(np.arange(0, 1.1, 0.1))
+plt.title('Relationship between pclass and target')
+plt.xlabel('Pclass')
+plt.ylabel('Mean of target')
+plt.show()
+mean_enc = MeanEncoder()
+mean_enc.fit(X_train, y_train)
+mean_enc.variables
+train_t = mean_enc.transform(X_train)
+test_t = mean_enc.transform(X_test)
+test_t.head()
 
 
-# The CountFrequencyEncoder(), replaces the categories by the count or frequency of the observations in the train set for that category. 
-#
-# If we select "count" in the encoding_method, then for the variable colour, if there are 10 observations in the train set that show colour blue, blue will be replaced by 10.<br><br> Alternatively, if we select "frequency" in the encoding_method, if 10% of the observations in the train set show blue colour, then blue will be replaced by 0.1.
+
+================================================
+File: OneHotEncoder.py
+================================================
+"""
+# OneHotEncoder
+Performs One Hot Encoding.
+
+The encoder can select how many different labels per variable to encode into binaries. When top_categories is set to None, all the categories will be transformed in binary variables. 
+
+However, when top_categories is set to an integer, for example 10, then only the 10 most popular categories will be transformed into binary, and the rest will be discarded.
+
+The encoder has also the possibility to create binary variables from all categories (drop_last = False), or remove the binary for the last category (drop_last = True), for use in linear models.
+
+Finally, the encoder has the option to drop the second dummy variable for binary variables. That is, if a categorical variable has 2 unique values, for example colour = ['black', 'white'], setting the parameter drop_last_binary=True, will automatically create only 1 binary for this variable, for example colour_black.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import OneHotEncoder
 
 
-# ### Frequency
-#
-# Labels are replaced by the percentage of the observations that show that label in the train set.
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
 
 
-'''
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+"""
 Parameters
 ----------
 
-encoding_method : str, default='count' 
-                Desired method of encoding.
-
-        'count': number of observations per category
-        
-        'frequency': percentage of observations per category
-
+top_categories: int, default=None
+    If None, a dummy variable will be created for each category of the variable.
+    Alternatively, top_categories indicates the number of most frequent categories
+    to encode. Dummy variables will be created only for those popular categories
+    and the rest will be ignored. Note that this is equivalent to grouping all the
+    remaining categories in one group.
+    
 variables : list
-          The list of categorical variables that will be encoded. If None, the 
-          encoder will find and transform all object type variables.
-'''
-count_encoder = CountFrequencyEncoder(encoding_method='frequency',
-                                      variables=['cabin', 'pclass', 'embarked'])
-
-count_encoder.fit(X_train)
-
-
-# we can explore the encoder_dict_ to find out the category replacements.
-count_encoder.encoder_dict_
-
-
-# transform the data: see the change in the head view
-train_t = count_encoder.transform(X_train)
-test_t = count_encoder.transform(X_test)
+    The list of categorical variables that will be encoded. If None, the  
+    encoder will find and select all object type variables.
+    
+drop_last: boolean, default=False
+    Only used if top_categories = None. It indicates whether to create dummy
+    variables for all the categories (k dummies), or if set to True, it will
+    ignore the last variable of the list (k-1 dummies).
+"""
+ohe_enc = OneHotEncoder(top_categories=None, variables=['pclass', 'cabin',
+    'embarked'], drop_last=False)
+ohe_enc.fit(X_train)
+ohe_enc.encoder_dict_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+ohe_enc = OneHotEncoder(top_categories=2, variables=['pclass', 'cabin',
+    'embarked'], drop_last=False)
+ohe_enc.fit(X_train)
+ohe_enc.encoder_dict_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+ohe_enc = OneHotEncoder(top_categories=None, variables=['pclass', 'cabin',
+    'embarked'], drop_last=True)
+ohe_enc.fit(X_train)
+ohe_enc.encoder_dict_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+ohe_enc = OneHotEncoder(top_categories=None, drop_last=True)
+ohe_enc.fit(X_train)
+ohe_enc.variables
+ohe_enc.variables_
+ohe_enc.variables_binary_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
+test_t.head()
+ohe_enc = OneHotEncoder(top_categories=None, drop_last=False,
+    drop_last_binary=True)
+ohe_enc.fit(X_train)
+ohe_enc.encoder_dict_
+ohe_enc.variables_binary_
+train_t = ohe_enc.transform(X_train)
+test_t = ohe_enc.transform(X_train)
 test_t.head()
 
 
-test_t['pclass'].value_counts().plot.bar()
-plt.show()
 
+================================================
+File: OrdinalEncoder.py
+================================================
+"""
+# OrdinalEncoder
+The OrdinalEncoder() will replace the variable labels by digits, from 1 to the number of different labels. 
 
-test_orig = count_encoder.inverse_transform(test_t)
-test_orig.head()
+If we select "arbitrary", then the encoder will assign numbers as the labels appear in the variable (first come first served).
 
-
-# ### Count
-#
-# Labels are replaced by the number of the observations that show that label in the train set.
-
-
-# this time we encode only 1 variable
-
-count_enc = CountFrequencyEncoder(encoding_method='count',
-                                                variables='cabin')
-
-count_enc.fit(X_train)
-
-
-# we can find the mappings in the encoder_dict_ attribute.
-
-count_enc.encoder_dict_
-
-
-# transform the data: see the change in the head view for Cabin
-
-train_t = count_enc.transform(X_train)
-test_t = count_enc.transform(X_test)
-
-test_t.head()
-
-
-# ### Select categorical variables automatically
-#
-# If we don't indicate which variables we want to encode, the encoder will find all categorical variables
-
-
-# this time we ommit the argument for variable
-count_enc = CountFrequencyEncoder(encoding_method = 'count')
-
-count_enc.fit(X_train)
-
-
-# we can see that the encoder selected automatically all the categorical variables
-
-count_enc.variables
-
-
-# transform the data: see the change in the head view
-
-train_t = count_enc.transform(X_train)
-test_t = count_enc.transform(X_test)
-
-test_t.head()
-
-
-# ### Note
-# if there are labels in the test set that were not present in the train set, the transformer will introduce NaN, and raise a warning.
-
-
-
-// ---------------------------------------------------
-
-// PRatioEncoder.py
-// PRatioEncoder.py
-# Generated from: PRatioEncoder.ipynb
-
-# # PRatioEncoder
-#
-# The PRatioEncoder() replaces categories by the ratio of the probability of the
-# target = 1 and the probability of the target = 0.<br>
-#
-# The target probability ratio is given by: p(1) / p(0).
-#
-# The log of the target probability ratio is: np.log( p(1) / p(0) )
-# #### It only works for binary classification.
-
-
+If we select "ordered", the encoder will assign numbers following the mean of the target value for that label. So labels for which the mean of the target is higher will get the number 1, and those where the mean of the target is smallest will get the number n.
+"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
-from feature_engine.encoding import PRatioEncoder
+from feature_engine.encoding import OrdinalEncoder
 
-from feature_engine.encoding import RareLabelEncoder #to reduce cardinality
-
-
-# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
     data = pd.read_csv(filepath)
@@ -1326,72 +396,118 @@ def load_titanic(filepath='titanic.csv'):
     return data
 
 
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
 data.head()
-
-
 X = data.drop(['survived', 'name', 'ticket'], axis=1)
 y = data.survived
-
-
-# we will encode the below variables, they have no missing values
 X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
+""" Make sure that the variables are type (object).
 if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
+or not pick it up (if we leave variables=None). """
 X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
 X_train.shape, X_test.shape
+"""
+Parameters
+----------
+
+encoding_method : str, default='ordered' 
+    Desired method of encoding.
+
+    'ordered': the categories are numbered in ascending order according to
+    the target mean value per category.
+
+    'arbitrary' : categories are numbered arbitrarily.
+    
+variables : list, default=None
+    The list of categorical variables that will be encoded. If None, the 
+    encoder will find and select all object type variables.
+"""
+ordinal_enc = OrdinalEncoder(encoding_method='ordered', variables=['pclass',
+    'cabin', 'embarked'])
+ordinal_enc.fit(X_train, y_train)
+ordinal_enc.encoder_dict_
+train_t = ordinal_enc.transform(X_train)
+test_t = ordinal_enc.transform(X_test)
+test_t.sample(5)
+""" The OrdinalEncoder with encoding_method='order' has the characteristic that return monotonic
+ variables,that is, encoded variables which values increase as the target increases"""
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('pclass')['survived'].mean().plot()
+plt.xticks([0, 1, 2])
+plt.yticks(np.arange(0, 1.1, 0.1))
+plt.title('Relationship between pclass and target')
+plt.xlabel('Pclass')
+plt.ylabel('Mean of target')
+plt.show()
+ordinal_enc = OrdinalEncoder(encoding_method='arbitrary', variables=[
+    'pclass', 'cabin', 'embarked'])
+ordinal_enc.fit(X_train)
+ordinal_enc.encoder_dict_
+train_t = ordinal_enc.transform(X_train)
+test_t = ordinal_enc.transform(X_test)
+test_t.sample(5)
+ordinal_enc = OrdinalEncoder(encoding_method='arbitrary')
+ordinal_enc.fit(X_train)
+ordinal_enc.variables
+train_t = ordinal_enc.transform(X_train)
+test_t = ordinal_enc.transform(X_test)
+test_t.sample(5)
 
 
-## Rare value encoder first to reduce the cardinality
-# see RareLabelEncoder jupyter notebook for more details on this encoder
-rare_encoder = RareLabelEncoder(tol=0.03,
-                                n_categories=2, 
-                                variables=['cabin', 'pclass', 'embarked'])
 
+================================================
+File: PRatioEncoder.py
+================================================
+"""
+# PRatioEncoder
+
+The PRatioEncoder() replaces categories by the ratio of the probability of the
+target = 1 and the probability of the target = 0.<br>
+
+The target probability ratio is given by: p(1) / p(0).
+
+The log of the target probability ratio is: np.log( p(1) / p(0) )
+#### It only works for binary classification.
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import PRatioEncoder
+from feature_engine.encoding import RareLabelEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+rare_encoder = RareLabelEncoder(tol=0.03, n_categories=2, variables=[
+    'cabin', 'pclass', 'embarked'])
 rare_encoder.fit(X_train)
-
-# transform
 train_t = rare_encoder.transform(X_train)
 test_t = rare_encoder.transform(X_test)
-
-
-# The PRatioEncoder() replaces categories by the ratio of the probability of the
-# target = 1 and the probability of the target = 0.
-#
-# The target probability ratio is given by: p(1) / p(0)
-#
-# The log of the target probability ratio is: np.log( p(1) / p(0) )
-#
-# Note: This categorical encoding is exclusive for binary classification.
-#
-# For example in the variable colour, if the mean of the target = 1 for blue
-# is 0.8 and the mean of the target = 0  is 0.2, blue will be replaced by:
-# 0.8 / 0.2 = 4 if ratio is selected, or log(0.8/0.2) = 1.386 if log_ratio
-# is selected.
-#
-# Note: the division by 0 is not defined and the log(0) is not defined.
-# Thus, if p(0) = 0 for the ratio encoder, or either p(0) = 0 or p(1) = 0 for
-# log_ratio, in any of the variables, the encoder will return an error.
-#
-# The encoder will encode only categorical variables (type 'object'). A list
-# of variables can be passed as an argument. If no variables are passed as
-# argument, the encoder will find and encode all categorical variables
-# (object type).
-
-
-# ### Ratio
-
-
-'''
+"""
 Parameters
 ----------
 
@@ -1405,106 +521,60 @@ encoding_method : str, default=woe
 variables : list, default=None
     The list of categorical variables that will be encoded. If None, the
     encoder will find and select all object type variables.
-'''
-Ratio_enc = PRatioEncoder(encoding_method='ratio',
-                           variables=['cabin', 'pclass', 'embarked'])
-
-# to fit you need to pass the target y
+"""
+Ratio_enc = PRatioEncoder(encoding_method='ratio', variables=['cabin',
+    'pclass', 'embarked'])
 Ratio_enc.fit(train_t, y_train)
-
-
 Ratio_enc.encoder_dict_
-
-
-# transform and visualise the data
-
 train_t = Ratio_enc.transform(train_t)
 test_t = Ratio_enc.transform(test_t)
-
 test_t.sample(5)
-
-
-# ### log ratio
-
-
 train_t = rare_encoder.transform(X_train)
 test_t = rare_encoder.transform(X_test)
-
-logRatio_enc = PRatioEncoder(encoding_method='log_ratio',
-                           variables=['cabin', 'pclass', 'embarked'])
-
-# to fit you need to pass the target y
+logRatio_enc = PRatioEncoder(encoding_method='log_ratio', variables=[
+    'cabin', 'pclass', 'embarked'])
 logRatio_enc.fit(train_t, y_train)
-
-
 logRatio_enc.encoder_dict_
-
-
-# transform and visualise the data
-
 train_t = logRatio_enc.transform(train_t)
 test_t = logRatio_enc.transform(test_t)
-
 test_t.sample(5)
-
-
-''' The PRatioEncoder(encoding_method='ratio' or 'log_ratio') has the characteristic that return monotonic
- variables, that is, encoded variables which values increase as the target increases'''
-
-# let's explore the monotonic relationship
-plt.figure(figsize=(7,5))
-pd.concat([test_t,y_test], axis=1).groupby("pclass")["survived"].mean().plot()
-#plt.xticks([0,1,2])
-plt.yticks(np.arange(0,1.1,0.1))
-plt.title("Relationship between pclass and target")
-plt.xlabel("Pclass")
-plt.ylabel("Mean of target")
+""" The PRatioEncoder(encoding_method='ratio' or 'log_ratio') has the characteristic that return monotonic
+ variables, that is, encoded variables which values increase as the target increases"""
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('pclass')['survived'].mean().plot()
+plt.yticks(np.arange(0, 1.1, 0.1))
+plt.title('Relationship between pclass and target')
+plt.xlabel('Pclass')
+plt.ylabel('Mean of target')
 plt.show()
-
-
-# ### Automatically select the variables
-#
-# This encoder will select all categorical variables to encode, when no variables are specified when calling the encoder.
-
-
 train_t = rare_encoder.transform(X_train)
 test_t = rare_encoder.transform(X_test)
-
 logRatio_enc = PRatioEncoder(encoding_method='log_ratio')
-
-# to fit you need to pass the target y
 logRatio_enc.fit(train_t, y_train)
-
-
-# transform and visualise the data
-
 train_t = logRatio_enc.transform(train_t)
 test_t = logRatio_enc.transform(test_t)
-
 test_t.sample(5)
 
 
 
-// ---------------------------------------------------
+================================================
+File: RareLabelEncoder.py
+================================================
+"""
+# RareLabelEncoder
 
-// MeanEncoder.py
-// MeanEncoder.py
-# Generated from: MeanEncoder.ipynb
+The RareLabelEncoder() groups labels that show a small number of observations in the dataset into a new category called 'Rare'. This helps to avoid overfitting.
 
-# # MeanEncoder
-#
-# The MeanEncoder() replaces the labels of the variables by the mean value of the target for that label. <br>For example, in the variable colour, if the mean value of the binary target is 0.5 for the label blue, then blue is replaced by 0.5
-
-
+The argument ' tol ' indicates the percentage of observations that the label needs to have in order not to be re-grouped into the "Rare" label.<br> The argument n_categories indicates the minimum number of distinct categories that a variable needs to have for any of the labels to be re-grouped into 'Rare'.<br><br>
+#### Note
+If the number of labels is smaller than n_categories, then the encoder will not group the labels for that variable.
+"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.model_selection import train_test_split
-from feature_engine.encoding import MeanEncoder
+from feature_engine.encoding import RareLabelEncoder
 
-
-# Load titanic dataset from file
 
 def load_titanic(filepath='titanic.csv'):
     data = pd.read_csv(filepath)
@@ -1517,105 +587,212 @@ def load_titanic(filepath='titanic.csv'):
     return data
 
 
-data = load_titanic("../data/titanic-2/Titanic-Dataset.csv")
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
 data.head()
-
-
 X = data.drop(['survived', 'name', 'ticket'], axis=1)
 y = data.survived
-
-
-# we will encode the below variables, they have no missing values
 X[['cabin', 'pclass', 'embarked']].isnull().sum()
-
-
-''' Make sure that the variables are type (object).
+""" Make sure that the variables are type (object).
 if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
-or not pick it up (if we leave variables=None). '''
-
+or not pick it up (if we leave variables=None). """
 X[['cabin', 'pclass', 'embarked']].dtypes
-
-
-# let's separate into training and testing set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
 X_train.shape, X_test.shape
-
-
-# The MeanEncoder() replaces categories by the mean value of the
-# target for each category.<br><br>
-# For example in the variable colour, if the mean of the target for blue, red
-# and grey is 0.5, 0.8 and 0.1 respectively, blue is replaced by 0.5, red by 0.8
-# and grey by 0.1.<br><br>
-# The encoder will encode only categorical variables (type 'object'). A list
-# of variables can be passed as an argument. If no variables are passed as 
-# argument, the encoder will find and encode all categorical variables
-# (object type).
-
-
-# we will transform 3 variables
-'''
+"""
 Parameters
-----------  
+----------
+
+tol: float, default=0.05
+    the minimum frequency a label should have to be considered frequent.
+    Categories with frequencies lower than tol will be grouped.
+
+n_categories: int, default=10
+    the minimum number of categories a variable should have for the encoder
+    to find frequent labels. If the variable contains less categories, all
+    of them will be considered frequent.
+
+max_n_categories: int, default=None
+    the maximum number of categories that should be considered frequent.
+    If None, all categories with frequency above the tolerance (tol) will be
+    considered.
+
 variables : list, default=None
     The list of categorical variables that will be encoded. If None, the 
     encoder will find and select all object type variables.
-'''
 
-mean_enc = MeanEncoder(variables=['cabin', 'pclass', 'embarked'])
-
-# Note: the MeanCategoricalEncoder needs the target to fit
-mean_enc.fit(X_train, y_train)
-
-
-# see the dictionary with the mappings per variable
-
-mean_enc.encoder_dict_
-
-
-# we can see the transformed variables in the head view
-
-train_t = mean_enc.transform(X_train)
-test_t = mean_enc.transform(X_test)
-
+replace_with : string, default='Rare'
+    The category name that will be used to replace infrequent categories.
+"""
+rare_encoder = RareLabelEncoder(tol=0.05, n_categories=5, variables=[
+    'cabin', 'pclass', 'embarked'])
+rare_encoder.fit(X_train)
+rare_encoder.encoder_dict_
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_train)
 test_t.head()
+test_t.cabin.value_counts()
+rare_encoder = RareLabelEncoder(tol=0.03, replace_with='Other', variables=[
+    'cabin', 'pclass', 'embarked'], n_categories=2)
+rare_encoder.fit(X_train)
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_train)
+test_t.sample(5)
+rare_encoder.encoder_dict_
+test_t.cabin.value_counts()
+rare_encoder = RareLabelEncoder(tol=0.03, variables=['cabin', 'pclass',
+    'embarked'], n_categories=2, max_n_categories=3)
+rare_encoder.fit(X_train)
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_train)
+test_t.sample(5)
+rare_encoder.encoder_dict_
+len(X_train['pclass'].unique()), len(X_train['sex'].unique()), len(X_train[
+    'embarked'].unique())
+rare_encoder = RareLabelEncoder(tol=0.03, n_categories=3)
+rare_encoder.fit(X_train)
+rare_encoder.encoder_dict_
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_train)
+test_t.sample(5)
 
 
-''' The MeanEncoder has the characteristic that return monotonic
- variables, that is, encoded variables which values increase as the target increases'''
 
-# let's explore the monotonic relationship
-plt.figure(figsize=(7,5))
-pd.concat([test_t,y_test], axis=1).groupby("pclass")["survived"].mean().plot()
-#plt.xticks([0,1,2])
-plt.yticks(np.arange(0,1.1,0.1))
-plt.title("Relationship between pclass and target")
-plt.xlabel("Pclass")
-plt.ylabel("Mean of target")
+================================================
+File: StringSimilarityEncoder.py
+================================================
+import string
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import StringSimilarityEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    translate_table = str.maketrans('', '', string.punctuation)
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['name'] = data['name'].str.strip().str.translate(translate_table
+        ).str.replace('  ', ' ').str.lower()
+    data['ticket'] = data['ticket'].str.strip().str.translate(translate_table
+        ).str.replace('  ', ' ').str.lower()
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X_train, X_test, y_train, y_test = train_test_split(data.drop(['survived',
+    'sex', 'cabin', 'embarked'], axis=1), data['survived'], test_size=0.3,
+    random_state=0)
+encoder = StringSimilarityEncoder(top_categories=2, variables=['name',
+    'ticket'])
+encoder.fit(X_train)
+encoder.encoder_dict_
+train_t = encoder.transform(X_train)
+test_t = encoder.transform(X_test)
+train_t.head(5)
+test_t.head(5)
+fig, ax = plt.subplots(2, 1)
+train_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_347082', sharex=
+    True, title='Ticket encoding in train', ax=ax[0])
+test_t.plot(kind='scatter', x='ticket_ca 2343', y='ticket_347082', sharex=
+    True, title='Ticket encoding in test', ax=ax[1])
+encoder = StringSimilarityEncoder(top_categories=2, missing_values='ignore',
+    variables=['name', 'ticket'])
+encoder.fit(X_train)
+encoder.encoder_dict_
+train_t = encoder.transform(X_train)
+test_t = encoder.transform(X_test)
+train_t.head(5)
+test_t.head(5)
+fig, ax = plt.subplots(2, 1)
+train_t.plot(kind='scatter', x='home.dest_new york ny', y=
+    'home.dest_london', sharex=True, title=
+    'Home destination encoding in train', ax=ax[0])
+test_t.plot(kind='scatter', x='home.dest_new york ny', y='home.dest_london',
+    sharex=True, title='Home destination encoding in test', ax=ax[1])
+from sklearn.decomposition import PCA
+encoder = StringSimilarityEncoder(top_categories=None, handle_missing=
+    'impute', variables=['home.dest'])
+encoder.fit(X_train)
+train_t = encoder.transform(X_train)
+train_t.shape
+home_encoded = train_t.filter(like='home.dest')
+pca = PCA(n_components=0.9)
+pca.fit(home_encoded)
+train_compressed = pca.transform(home_encoded)
+train_compressed.shape
+
+
+
+================================================
+File: WoEEncoder.py
+================================================
+"""
+## WoEEncoder (weight of evidence)
+
+This encoder replaces the labels by the weight of evidence 
+#### It only works for binary classification.
+
+The weight of evidence is given by: log( p(1) / p(0) )
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from feature_engine.encoding import WoEEncoder
+from feature_engine.encoding import RareLabelEncoder
+
+
+def load_titanic(filepath='titanic.csv'):
+    data = pd.read_csv(filepath)
+    data = data.replace('?', np.nan)
+    data['cabin'] = data['cabin'].astype(str).str[0]
+    data['pclass'] = data['pclass'].astype('O')
+    data['age'] = data['age'].astype('float').fillna(data.age.median())
+    data['fare'] = data['fare'].astype('float').fillna(data.fare.median())
+    data['embarked'].fillna('C', inplace=True)
+    return data
+
+
+data = load_titanic('../data/titanic-2/Titanic-Dataset.csv')
+data.head()
+X = data.drop(['survived', 'name', 'ticket'], axis=1)
+y = data.survived
+X[['cabin', 'pclass', 'embarked']].isnull().sum()
+""" Make sure that the variables are type (object).
+if not, cast it as object , otherwise the transformer will either send an error (if we pass it as argument) 
+or not pick it up (if we leave variables=None). """
+X[['cabin', 'pclass', 'embarked']].dtypes
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+    random_state=0)
+X_train.shape, X_test.shape
+rare_encoder = RareLabelEncoder(tol=0.03, n_categories=2, variables=[
+    'cabin', 'pclass', 'embarked'])
+rare_encoder.fit(X_train)
+train_t = rare_encoder.transform(X_train)
+test_t = rare_encoder.transform(X_test)
+woe_enc = WoEEncoder(variables=['cabin', 'pclass', 'embarked'])
+woe_enc.fit(train_t, y_train)
+woe_enc.encoder_dict_
+train_t = woe_enc.transform(train_t)
+test_t = woe_enc.transform(test_t)
+test_t.sample(5)
+""" The WoEEncoder has the characteristic that return monotonic
+ variables, that is, encoded variables which values increase as the target increases"""
+plt.figure(figsize=(7, 5))
+pd.concat([test_t, y_test], axis=1).groupby('pclass')['survived'].mean().plot()
+plt.yticks(np.arange(0, 1.1, 0.1))
+plt.title('Relationship between pclass and target')
+plt.xlabel('Pclass')
+plt.ylabel('Mean of target')
 plt.show()
-
-
-# ### Automatically select the variables
-#
-# This encoder will select all categorical variables to encode, when no variables are specified when calling the encoder.
-
-
-mean_enc = MeanEncoder()
-
-mean_enc.fit(X_train, y_train)
-
-
-mean_enc.variables
-
-
-# we can see the transformed variables in the head view
-
-train_t = mean_enc.transform(X_train)
-test_t = mean_enc.transform(X_test)
-
+ratio_enc = WoEEncoder()
+ratio_enc.fit(train_t, y_train)
+train_t = ratio_enc.transform(train_t)
+test_t = ratio_enc.transform(test_t)
 test_t.head()
 
-
-
-// ---------------------------------------------------
 

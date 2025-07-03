@@ -1,5 +1,10 @@
-// MatchVariables.py
-// MatchVariables.py
+Directory structure:
+└── preprocessing/
+    └── MatchVariables.py
+
+================================================
+File: MatchVariables.py
+================================================
 # Generated from: MatchVariables.ipynb
 
 # # MatchVariables
@@ -120,6 +125,4 @@ test_tt.head()
 # Note how the columns that were present in the test set but not in train set were dropped. And now, the missing variables were added back into the dataset with the value 0.
 
 
-
-// ---------------------------------------------------
 
